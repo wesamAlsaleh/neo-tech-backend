@@ -83,4 +83,26 @@ class AuthController extends Controller
             ],
         ], 200);
     }
+
+    // Logout a user
+    public function logout(Request $request): JsonResponse
+    {
+        // Revoke the user token
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'User logged out successfully',
+            'status' => 'success',
+        ], 200);
+    }
+
+    // Get the authenticated user who made the request to the API
+    public function user(Request $request): JsonResponse
+    {
+        return response()->json([
+            'message' => 'User retrieved successfully',
+            'status' => 'success',
+            'data' => $request->user(),
+        ], 200);
+    }
 }
