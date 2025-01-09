@@ -58,34 +58,42 @@ class AuthController extends Controller
     // Login a user
     public function login(Request $request): JsonResponse
     {
-        // Validate the request
-        $request->validate([
-            'email' => 'required|email|max:255',
-            'password' => 'required|string|min:8|max:255',
-        ]);
+        try {
+            // Validate the request
+            $request->validate([
+                'email' => 'required|email|max:255',
+                'password' => 'required|string|min:8|max:255',
+            ]);
 
-        // Check if the user exists in the database
-        $user = User::where('email', $request->email)->first();
+            // Check if the user exists in the database
+            $user = User::where('email', $request->email)->first();
 
-        // If the user does not exist or the password is incorrect return an error response
-        if (!$user || !Hash::check($request->password, $user->password)) {
+            // If the user does not exist or the password is incorrect return an error response
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'message' => 'Invalid credentials',
+                    'status' => 'error',
+                ], 401);
+            }
+
+            // If the user exists generate a token for the user
+            $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
+
             return response()->json([
-                'message' => 'Invalid credentials',
+                'message' => 'User logged in successfully',
+                'status' => 'success',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'User not logged in',
                 'status' => 'error',
-            ], 401);
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // If the user exists generate a token for the user
-        $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
-
-        return response()->json([
-            'message' => 'User logged in successfully',
-            'status' => 'success',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-            ],
-        ], 200);
     }
 
     // Logout a user
