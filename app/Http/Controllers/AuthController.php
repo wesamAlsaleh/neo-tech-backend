@@ -38,7 +38,6 @@ class AuthController extends Controller
 
                 return response()->json([
                     'message' => 'User created successfully',
-                    'status' => 'success',
                     'data' => [
                         'user' => $user,
                         'token' => $token,
@@ -48,7 +47,6 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not created',
-                'status' => 'error',
                 'error' => $e->getMessage(),
             ], 500);
         }
