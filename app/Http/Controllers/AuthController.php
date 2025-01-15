@@ -47,7 +47,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not created',
-                'error' => $e->getMessage(),
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -86,7 +86,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not logged in',
-                'error' => $e->getMessage(),
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -104,7 +104,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not logged out',
-                'error' => $e->getMessage(),
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -120,7 +120,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not retrieved',
-                'error' => $e->getMessage(),
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
