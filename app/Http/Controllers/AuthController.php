@@ -38,7 +38,7 @@ class AuthController extends Controller
 
                 return response()->json([
                     'message' => 'User created successfully',
-                    'data' => [
+                    'userData' => [
                         'user' => $user,
                         'token' => $token,
                     ],
@@ -78,8 +78,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'User logged in successfully',
-                'status' => 'success',
-                'data' => [
+                'userData' => [
                     'user' => $user,
                     'token' => $token,
                 ],
@@ -87,7 +86,6 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not logged in',
-                'status' => 'error',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -102,12 +100,10 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'User logged out successfully',
-                'status' => 'success',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not logged out',
-                'status' => 'error',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -119,13 +115,11 @@ class AuthController extends Controller
         try {
             return response()->json([
                 'message' => 'User retrieved successfully',
-                'status' => 'success',
-                'data' => $request->user(),
+                'userData' => $request->user(),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not retrieved',
-                'status' => 'error',
                 'error' => $e->getMessage(),
             ], 500);
         }
