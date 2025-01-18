@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class CategoryController extends Controller
 {
     // Store category in database
-    public function storeImage(Request $request)
+    public function createCategory(Request $request)
     {
         try {
             // Validate incoming request
@@ -53,7 +53,7 @@ class CategoryController extends Controller
 
 
     // Get all categories
-    public function geyAllCategories()
+    public function getAllCategories()
     {
         try {
             return response()->json([
