@@ -23,12 +23,12 @@ class CategoryController extends Controller
             $imageName = null;
 
             // Check if image is provided
-            if ($request->file('category_image')->isValid()) {
+            if ($request->hasFile('category_image')) {
                 // Generate a unique file name based on the current timestamp and file extension (e.g. .jpg)
                 $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Move image to storage (recommended over public_path for security)
-                $request->file('category_image')->storeAs('public/categories_images', $imageName);
+                // Store the image in the storage/app/private/images/categories_images directory
+                $request->file('category_image')->storeAs('images/categories_images', $imageName);
             }
 
             // Save category in the database
@@ -42,6 +42,7 @@ class CategoryController extends Controller
             // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category created successfully",
+                // 'category' => $category
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -57,13 +58,27 @@ class CategoryController extends Controller
     public function getAllCategories()
     {
         try {
+            // Fetch all categories
+            $categories = Category::all()->map(function ($category) {
+                // Add the full URL for the category image
+                if ($category->category_image) {
+                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image);
+                } else {
+                    $category->category_image_url = null;
+                }
+                return $category;
+            });
+
+            // Return the response
             return response()->json([
-                'categories' => Category::all()
+                'message' => 'Categories fetched successfully',
+                'categories' => $categories,
             ], 200);
         } catch (\Exception $e) {
+            // Handle exceptions
             return response()->json([
                 'message' => 'An error occurred while fetching categories',
-                'errorMessage' => $e->getMessage()
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
