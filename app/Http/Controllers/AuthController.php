@@ -30,6 +30,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone_number' => $request->phone_number,
+                'role' => 'user', // default role is user
             ]);
 
             // if the user is created successfully generate a token for the user
@@ -120,6 +121,22 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'User not retrieved',
+                'errorMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // get the user role who made the request to the API
+    public function userRole(Request $request): JsonResponse
+    {
+        try {
+            return response()->json([
+                'message' => 'User role retrieved successfully',
+                'userRole' => $request->user()->role,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'User role not retrieved',
                 'errorMessage' => $e->getMessage(),
             ], 500);
         }

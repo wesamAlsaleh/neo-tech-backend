@@ -33,8 +33,10 @@ Route::get('/test', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Auth routes that are protected by sanctum middleware (auth:sanctum)
+// Auth routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated]
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in
+    Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user
+
 });
