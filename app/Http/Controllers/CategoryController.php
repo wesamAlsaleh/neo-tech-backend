@@ -24,11 +24,11 @@ class CategoryController extends Controller
 
             // Check if image is provided
             if ($request->hasFile('category_image')) {
-                // Generate unique name for the image
-                $imageName = time() . '.' . $request->file('category_image')->getClientOriginalExtension();
+                // Generate unique image name
+                $imageName = time() . '.' . $request->image->extension();
 
-                // Move image to the public folder
-                $request->file('category_image')->move(public_path('category_images'), $imageName);
+                // Move image to public/categories_images folder
+                $request->image->move(public_path('categories_images'), $imageName);
             }
 
             // Save category in the database
