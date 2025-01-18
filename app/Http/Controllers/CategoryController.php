@@ -19,37 +19,38 @@ class CategoryController extends Controller
                 'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
             ]);
 
-            // Handle image upload if provided
+            // Initialize image name
             $imageName = null;
 
             // Check if image is provided
-            if ($request->hasFile('category_image')) {
-                // Generate unique image name
-                $imageName = time() . '.' . $request->image->extension();
+            if ($request->file('category_image')->isValid()) {
+                // Generate a unique file name based on the current timestamp and file extension (e.g. .jpg)
+                $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Move image to public/categories_images folder
-                $request->image->move(public_path('categories_images'), $imageName);
+                // Move image to storage (recommended over public_path for security)
+                $request->file('category_image')->storeAs('public/categories_images', $imageName);
             }
 
             // Save category in the database
-            Category::create([
+            $category = Category::create([
                 'category_name' => $request->category_name,
                 'category_slug' => $request->category_slug,
                 'category_description' => $request->category_description,
-                'category_image' => $imageName,
+                'category_image' => $imageName, // Can be null if no image is uploaded
             ]);
 
             // Return JSON response
             return response()->json([
-                'message' => "{$request->category_name} category created successfully",
+                'message' => "{$category->category_name} category created successfully",
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred while uploading the image',
+                'message' => 'An error occurred while creating the category. Please try again later.',
                 'errorMessage' => $e->getMessage()
             ], 500);
         }
     }
+
 
 
     // Get all categories
