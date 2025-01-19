@@ -113,7 +113,7 @@ class CategoryController extends Controller
         }
     }
 
-    // Update category by id
+    // Update category by id TODO: Refactor this method for better code readability
     public function updateCategoryById(Request $request, string $id)
     {
         try {
