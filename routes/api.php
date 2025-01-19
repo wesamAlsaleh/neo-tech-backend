@@ -47,6 +47,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
     Route::get('/admin/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
     Route::get('/admin/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
-    Route::put('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update a category "not working"
-
+    Route::put('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']);
 });

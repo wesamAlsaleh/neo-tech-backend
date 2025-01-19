@@ -14,13 +14,15 @@ class CategoryController extends Controller
             // Validate incoming request
             $request->validate([
                 'category_name' => 'required|string|max:255',
-                'category_slug' => 'required|string|max:255|unique:categories,category_slug',
                 'category_description' => 'nullable|string',
                 'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
             ]);
 
             // Initialize image name
             $imageName = null;
+
+            // Create the slug from the category name
+            $slug = strtolower(str_replace(' ', '-', $request->category_name)); // e.g. "My Category" -> "my-category"
 
             // Check if image is provided
             if ($request->hasFile('category_image')) {
@@ -34,7 +36,7 @@ class CategoryController extends Controller
             // Save category in the database
             $category = Category::create([
                 'category_name' => $request->category_name,
-                'category_slug' => $request->category_slug,
+                'category_slug' => $slug,
                 'category_description' => $request->category_description,
                 'category_image' => $imageName, // Can be null if no image is uploaded
             ]);
@@ -103,6 +105,61 @@ class CategoryController extends Controller
     }
 
     // Update category by id
+    public function updateCategoryById($id, Request $request)
+    {
+        try {
+            // Validate incoming request
+            $request->validate([
+                'category_name' => 'required|string|max:255',
+                'category_slug' => 'required|string|max:255|unique:categories,category_slug',
+                'category_description' => 'nullable|string',
+                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+            ]);
+
+            // Find category by id
+            $category = Category::find($id);
+
+            // Check if category exists
+            if (!$category) {
+                return response()->json([
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            // Initialize image name
+            $imageName = $category->category_image;
+
+            // Check if image is provided
+            if ($request->hasFile('category_image')) {
+                // Generate a unique file name based on the current timestamp and file extension (e.g. .jpg)
+                $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
+
+                // Store the image in the storage/app/private/images/categories_images directory
+                $request->file('category_image')->storeAs('images/categories_images', $imageName);
+            }
+
+            // Update category in the database
+            $category->update([
+                'category_name' => $request->category_name ?? $category->category_name,
+                'category_slug' => $request->category_slug ?? $category->category_slug,
+                'category_description' => $request->category_description ?? $category->category_description,
+                'category_image' => $imageName, // Can be null if no image is uploaded
+            ]);
+
+            // Return JSON response
+            return response()->json([
+                'message' => "{$category->category_name} category updated successfully",
+                'category' => $category,
+                'request' => $request->all()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating the category. Please try again later.',
+                'errorMessage' => $e->getMessage(),
+                'request' => $request->all()
+            ], 500);
+        }
+    }
 
 
     // TODO: Delete category by id
