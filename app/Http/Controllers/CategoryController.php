@@ -202,5 +202,31 @@ class CategoryController extends Controller
     }
 
     // TODO: Search category by name
+    // public function searchCategoryByName($name)
+    // {
+    //     try {
+    //         // Search for categories by name
+    //         $categories = Category::where('category_name', 'LIKE', '%' . $name . '%')->get();
+
+    //         // Check if any categories are found
+    //         if ($categories->isEmpty()) {
+    //             return response()->json([
+    //                 'message' => 'No categories found with the given name'
+    //             ], 404);
+    //         }
+
+    //         // Return JSON response with the found categories
+    //         return response()->json([
+    //             'message' => 'Categories found successfully',
+    //             'categories' => $categories
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'message' => 'An error occurred while searching for categories',
+    //             'errorMessage' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     // TODO: Search category by slug
 }

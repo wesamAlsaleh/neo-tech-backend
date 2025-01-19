@@ -48,5 +48,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/admin/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
     Route::get('/admin/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
     Route::put('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "not working"
-    Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id ""
+    Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
+
 });
