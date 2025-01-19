@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -162,7 +163,44 @@ class CategoryController extends Controller
     }
 
 
-    // TODO: Delete category by id
+    // Delete category by id
+    public function deleteCategoryById($id)
+    {
+        try {
+            // Find category by id
+            $category = Category::find($id);
+
+            // Check if category exists
+            if (!$category) {
+                return response()->json([
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            // Delete category from the database
+            $category->delete();
+
+            // Delete the category image if it exists
+            if ($category->category_image) {
+                // Check if the image exists in the directory before attempting to delete it
+                if (Storage::exists('images/categories_images/' . $category->category_image)) {
+                    // Delete the image from the storage
+                    Storage::delete('images/categories_images/' . $category->category_image);
+                }
+            }
+
+            // Return JSON response
+            return response()->json([
+                'message' => "{$category->category_name} category deleted successfully"
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while deleting the category. Please try again later.',
+                'errorMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // TODO: Search category by name
     // TODO: Search category by slug
 }
