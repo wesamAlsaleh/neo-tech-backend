@@ -62,6 +62,14 @@ class CategoryController extends Controller
             // Fetch all categories from the database
             $categories = Category::all();
 
+            // If categories are empty, return a JSON response
+            if ($categories->isEmpty()) {
+                return response()->json([
+                    'message' => 'Categories fetched successfully',
+                    'categories' => 'No categories found',
+                ], 404);
+            }
+
             // Return the response
             return response()->json([
                 'message' => 'Categories fetched successfully',
