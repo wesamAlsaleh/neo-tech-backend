@@ -52,22 +52,12 @@ class CategoryController extends Controller
         }
     }
 
-
-
     // Get all categories
     public function getAllCategories()
     {
         try {
-            // Fetch all categories
-            $categories = Category::all()->map(function ($category) {
-                // Add the full URL for the category image
-                if ($category->category_image) {
-                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image);
-                } else {
-                    $category->category_image_url = null;
-                }
-                return $category;
-            });
+            // Fetch all categories from the database
+            $categories = Category::all();
 
             // Return the response
             return response()->json([
@@ -112,7 +102,9 @@ class CategoryController extends Controller
         }
     }
 
-    // TODO: Update category by id
+    // Update category by id
+
+
     // TODO: Delete category by id
     // TODO: Search category by name
     // TODO: Search category by slug
