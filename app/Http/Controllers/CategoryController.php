@@ -114,19 +114,25 @@ class CategoryController extends Controller
     }
 
     // Update category by id
-    public function updateCategoryById($id, Request $request)
+    public function updateCategoryById(Request $request, string $id)
     {
         try {
             // Validate incoming request
             $request->validate([
-                'category_name' => 'required|string|max:255',
-                'category_slug' => 'required|string|max:255|unique:categories,category_slug',
+                'category_name' => 'nullable|string|max:255',
                 'category_description' => 'nullable|string',
                 'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
             ]);
 
+
             // Find category by id
             $category = Category::find($id);
+
+            // Initialize old image name and category name and slug from the database
+            $imageName = $category->category_image;
+            $categoryName = $category->category_name;
+            $categorySlugName = $category->category_slug;
+
 
             // Check if category exists
             if (!$category) {
@@ -135,31 +141,41 @@ class CategoryController extends Controller
                 ], 404);
             }
 
-            // Initialize image name
-            $imageName = $category->category_image;
+
+
+            // If the category name has been updated, generate a new name and slug
+            if ($request->category_name !== $categoryName) {
+                $categoryName = $request->category_name; // Update the name
+                $categorySlugName = strtolower(str_replace(' ', '-', $request->category_name)); // Generate new slug based on the new name
+            }
+
 
             // Check if image is provided
             if ($request->hasFile('category_image')) {
-                // Generate a unique file name based on the current timestamp and file extension (e.g. .jpg)
+                // Delete the old image if it exists
+                if ($category->category_image && Storage::exists('images/categories_images/' . $category->category_image)) {
+                    Storage::delete('images/categories_images/' . $category->category_image);
+                }
+
+                // Generate a new image name
                 $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Store the image in the storage/app/private/images/categories_images directory
+                // Store the new image in the images/categories_images directory
                 $request->file('category_image')->storeAs('images/categories_images', $imageName);
             }
 
-            // Update category in the database
+            // Update category in the database with validated fields
             $category->update([
-                'category_name' => $request->category_name ?? $category->category_name,
-                'category_slug' => $request->category_slug ?? $category->category_slug,
+                'category_name' => $categoryName,
+                'category_slug' => $categorySlugName,
                 'category_description' => $request->category_description ?? $category->category_description,
-                'category_image' => $imageName, // Can be null if no image is uploaded
+                'category_image' => $imageName, // Update image name if new image is uploaded
             ]);
 
             // Return JSON response
             return response()->json([
-                'message' => "{$category->category_name} category updated successfully",
+                // 'message' => "{$category->category_name} category updated successfully",
                 'category' => $category,
-                'request' => $request->all()
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
