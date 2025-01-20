@@ -41,13 +41,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user
 });
 
+
+/**
+|--------------------------------------------------------------------------
+|   C routes that are not protected by sanctum middleware
+|--------------------------------------------------------------------------
+ */
 // TODO: Add admin check middleware to the routes below to ensure only admin can access them
 // Admin routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated]
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Create/Update/Delete Category routes
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
-    Route::get('/admin/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
-    Route::get('/admin/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
-
 });
+
+// Client routes for getting categories
+Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"

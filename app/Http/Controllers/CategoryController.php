@@ -30,8 +30,8 @@ class CategoryController extends Controller
                 // Generate a unique file name based on the current timestamp and file extension (e.g. .jpg)
                 $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Store the image in the storage/app/private/images/categories_images directory
-                $request->file('category_image')->storeAs('images/categories_images', $imageName);
+                // Store file in the correct folder put(path, file)
+                $request->file('category_image')->storeAs('images/categories_images', $imageName, 'public');
             }
 
             // Save category in the database
