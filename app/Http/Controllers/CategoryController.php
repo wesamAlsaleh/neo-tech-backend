@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    // Store category in database
+    // Store category in database TODO: fix the error response
     public function createCategory(Request $request)
     {
         try {
@@ -65,10 +65,23 @@ class CategoryController extends Controller
             // If categories are empty, return a JSON response
             if ($categories->isEmpty()) {
                 return response()->json([
-                    'message' => 'Categories fetched successfully',
-                    'categories' => 'No categories found',
+                    'message' => 'No categories found',
+                    'categories' => [],
                 ], 404);
             }
+
+            // Append the full image URL to each category
+            $categories->transform(function ($category) {
+                // Check if category has an image
+                if ($category->category_image) {
+                    // Append the full image URL to the category object
+                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
+                } else {
+                    $category->category_image_url = null; // Optional: Handle categories with no image
+                }
+
+                return $category;
+            });
 
             // Return the response
             return response()->json([
