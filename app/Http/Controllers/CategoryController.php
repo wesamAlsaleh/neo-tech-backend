@@ -4,21 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    // Store category in database TODO: fix if the same image is available in t he disk, it cant be stored in the again with different id and same image
+    // TODO: Remove Error Messages from the response due to security reasons in production
+
+    // Store category in database
     public function createCategory(Request $request)
     {
+        // Validate incoming request
+        $request->validate([
+            'category_name' => 'required|string|max:255',
+            'category_description' => 'nullable|string',
+            'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+        ]);
+
         try {
-            // Validate incoming request
-            $request->validate([
-                'category_name' => 'required|string|max:255',
-                'category_description' => 'nullable|string',
-                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
-            ]);
 
             // Initialize image name
             $imageName = null;
@@ -40,12 +44,14 @@ class CategoryController extends Controller
                 'category_name' => $request->category_name,
                 'category_slug' => $slug,
                 'category_description' => $request->category_description,
+                'is_active' => false, // Default to false
                 'category_image' => $imageName, // Can be null if no image is uploaded
             ]);
 
             // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category created successfully",
+                // 'request' => $request->all(),
                 // 'category' => $category
             ], 201);
         } catch (\Exception $e) {
@@ -60,6 +66,9 @@ class CategoryController extends Controller
     public function getAllCategories()
     {
         try {
+            // TODO: Add Pagination
+            // $categories = Category::paginate(10); // 10 categories per page
+
             // Fetch all categories from the database
             $categories = Category::all();
 
@@ -79,6 +88,11 @@ class CategoryController extends Controller
                     $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
                 } else {
                     $category->category_image_url = null; // Optional: Handle categories with no image
+
+                    // TODO: Add placeholder image URL if no image is available
+                    // $category->category_image_url = $category->category_image
+                    //     ? asset('storage/images/categories_images/' . $category->category_image)
+                    //     : asset('images/default-category-placeholder.jpg');
                 }
 
                 return $category;
@@ -101,6 +115,13 @@ class CategoryController extends Controller
     // Get category by id
     public function getCategoryById(string $id)
     {
+        // Check if the ID is numeric otherwise return a JSON response
+        if (!is_numeric($id)) {
+            return response()->json([
+                'message' => 'Invalid category ID format',
+            ], 400);
+        }
+
         try {
             // Find category by id
             $category = Category::find($id);
@@ -111,6 +132,11 @@ class CategoryController extends Controller
                 $imageUrl = $category->category_image
                     ? asset('storage/images/categories_images/' . $category->category_image)
                     : null;
+
+                // TODO: Add placeholder image URL if no image is available
+                // $imageUrl = $category->category_image
+                //     ? asset('storage/images/categories_images/' . $category->category_image)
+                //     : asset('images/default-category-placeholder.jpg');
 
                 return response()->json([
                     'category' => [
@@ -139,15 +165,23 @@ class CategoryController extends Controller
     // Update category by id
     public function updateCategoryById(Request $request, string $id)
     {
+        // Check if the ID is numeric otherwise return a JSON response
+        if (!is_numeric($id)) {
+            return response()->json([
+                'message' => 'Invalid category ID format',
+            ], 400);
+        }
+
+        // Validate incoming request
+        $validatedData = $request->validate([
+            'category_name' => 'nullable|string|max:255',
+            'category_description' => 'nullable|string',
+            'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+        ]);
+
+        DB::beginTransaction(); // Start a database transaction to ensure data integrity
+
         try {
-            // Validate incoming request
-            $validatedData = $request->validate([
-                'category_name' => 'nullable|string|max:255',
-                'category_description' => 'nullable|string',
-                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
-            ]);
-
-
             // Find category by id
             $category = Category::find($id);
 
@@ -199,7 +233,10 @@ class CategoryController extends Controller
                 'message' => "{$category->category_name} category updated successfully",
                 // 'category' => $category,
             ], 200);
+
+            DB::commit(); // Commit the transaction if everything is successful and no exceptions are thrown
         } catch (\Exception $e) {
+            DB::rollBack(); // Rollback the transaction if an exception occurs
             return response()->json([
                 'message' => 'An error occurred while updating the category. Please try again later.',
                 'errorMessage' => $e->getMessage(),
@@ -212,6 +249,13 @@ class CategoryController extends Controller
     // Delete category by id
     public function deleteCategoryById(string $id)
     {
+        // Check if the ID is numeric otherwise return a JSON response
+        if (!is_numeric($id)) {
+            return response()->json([
+                'message' => 'Invalid category ID format',
+            ], 400);
+        }
+
         try {
             // Find category by id
             $category = Category::find($id);
@@ -251,6 +295,13 @@ class CategoryController extends Controller
     // Toggle category status by id
     public function toggleCategoryStatusById(string $id)
     {
+        // Check if the ID is numeric otherwise return a JSON response
+        if (!is_numeric($id)) {
+            return response()->json([
+                'message' => 'Invalid category ID format',
+            ], 400);
+        }
+
         try {
             // Find category by id
             $category = Category::find($id);
