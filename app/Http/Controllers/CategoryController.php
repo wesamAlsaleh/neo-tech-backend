@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    // Store category in database TODO: fix the error response
+    // Store category in database TODO: fix if the same image is available in t he disk, it cant be stored in the again with different id and same image
     public function createCategory(Request $request)
     {
         try {
