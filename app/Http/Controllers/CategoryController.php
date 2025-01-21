@@ -142,7 +142,7 @@ class CategoryController extends Controller
     {
         try {
             // Validate incoming request
-            $request->validate([
+            $validatedData = $request->validate([
                 'category_name' => 'nullable|string|max:255',
                 'category_description' => 'nullable|string',
                 'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
@@ -152,12 +152,6 @@ class CategoryController extends Controller
             // Find category by id
             $category = Category::find($id);
 
-            // Initialize old image name and category name and slug from the database
-            $imageName = $category->category_image;
-            $categoryName = $category->category_name;
-            $categorySlugName = $category->category_slug;
-
-
             // Check if category exists
             if (!$category) {
                 return response()->json([
@@ -165,40 +159,45 @@ class CategoryController extends Controller
                 ], 404);
             }
 
+            // Initialize old image name
+            $imageName = $category->category_image;
 
 
-            // If the category name has been updated, generate a new name and slug
-            if ($request->category_name !== $categoryName) {
-                $categoryName = $request->category_name; // Update the name
-                $categorySlugName = strtolower(str_replace(' ', '-', $request->category_name)); // Generate new slug based on the new name
+            // Update category name and slug if name is provided if(the category name is not empty and different from the current name)
+            if (!empty($validatedData['category_name']) && $validatedData['category_name'] !== $category->category_name) {
+                // Update the category name
+                $category->category_name = $validatedData['category_name'];
+
+                // Update the category slug
+                $category->category_slug = strtolower(str_replace(' ', '-', $validatedData['category_name']));
             }
 
 
-            // Check if image is provided
+            // Check if a new image is uploaded
             if ($request->hasFile('category_image')) {
-                // Delete the old image if it exists
-                if ($category->category_image && Storage::exists('images/categories_images/' . $category->category_image)) {
-                    Storage::delete('images/categories_images/' . $category->category_image);
+                // Delete the old image if it exists if(there is an old image and the file exists in the storage disk)
+                if ($category->category_image && Storage::disk('public')->exists('images/categories_images/' . $category->category_image)) {
+                    // Delete the old image
+                    Storage::disk('public')->delete('images/categories_images/' . $category->category_image);
                 }
 
-                // Generate a new image name
+                // Generate a new image name and store the file
                 $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Store the new image in the images/categories_images directory
-                $request->file('category_image')->storeAs('images/categories_images', $imageName);
+                // Store the new image in the correct folder storage/app/public/images/categories_images
+                $request->file('category_image')->storeAs('images/categories_images', $imageName, 'public');
             }
 
-            // Update category in the database with validated fields
-            $category->update([
-                'category_name' => $categoryName,
-                'category_slug' => $categorySlugName,
-                'category_description' => $request->category_description ?? $category->category_description,
-                'category_image' => $imageName, // Update image name if new image is uploaded
-            ]);
+            // Update other fields if provided
+            $category->category_description = $validatedData['category_description'] ?? $category->category_description;
+            $category->category_image = $imageName;
+
+            // Save the updated category
+            $category->save();
 
             // Return JSON response
             return response()->json([
-                // 'message' => "{$category->category_name} category updated successfully",
+                'message' => "{$category->category_name} category updated successfully",
                 'category' => $category,
             ], 200);
         } catch (\Exception $e) {
