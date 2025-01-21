@@ -136,8 +136,7 @@ class CategoryController extends Controller
         }
     }
 
-    // TODO: fix the Attempt to read property \"category_image\" on null error
-    // Update category by id TODO: Refactor this method for better code readability
+    // Update category by id
     public function updateCategoryById(Request $request, string $id)
     {
         try {
@@ -175,7 +174,7 @@ class CategoryController extends Controller
 
             // Check if a new image is uploaded
             if ($request->hasFile('category_image')) {
-                // Delete the old image if it exists if(there is an old image and the file exists in the storage disk)
+                // Delete the old image if it exists if to replace it with the requested one (there is an old image and the file exists in the storage disk)
                 if ($category->category_image && Storage::disk('public')->exists('images/categories_images/' . $category->category_image)) {
                     // Delete the old image
                     Storage::disk('public')->delete('images/categories_images/' . $category->category_image);
@@ -198,7 +197,7 @@ class CategoryController extends Controller
             // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category updated successfully",
-                'category' => $category,
+                // 'category' => $category,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -249,7 +248,6 @@ class CategoryController extends Controller
         }
     }
 
-    // TODO: add API route for this method
     // Toggle category status by id
     public function toggleCategoryStatusById(string $id)
     {
@@ -270,7 +268,7 @@ class CategoryController extends Controller
 
             // Return JSON response
             return response()->json([
-                'message' => "{$category->category_name} category status updated successfully",
+                'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
+    Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']);
 });
 
 // Client routes for getting categories
