@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
@@ -98,7 +99,7 @@ class CategoryController extends Controller
     }
 
     // Get category by id
-    public function getCategoryById($id)
+    public function getCategoryById(string $id)
     {
         try {
             // Find category by id
@@ -106,17 +107,26 @@ class CategoryController extends Controller
 
             // Check if category exists and return JSON response
             if ($category) {
+                // Get full image URL if an image exists
+                $imageUrl = $category->category_image
+                    ? asset('storage/images/categories_images/' . $category->category_image)
+                    : null;
+
                 return response()->json([
-                    'category' => $category
+                    'category' => [
+                        'id' => $category->id,
+                        'category_name' => $category->category_name,
+                        'category_slug' => $category->category_slug,
+                        'category_description' => $category->category_description,
+                        'is_active' => $category->is_active,
+                        'category_image_url' => $imageUrl,
+                    ],
                 ], 200);
             } else {
                 // Return JSON response if category is not found
-                return response()->json(
-                    [
-                        'message' => 'Category not found'
-                    ],
-                    404
-                );
+                return response()->json([
+                    'message' => 'Category not found',
+                ], 404);
             }
         } catch (\Exception $e) {
             return response()->json([
@@ -126,6 +136,7 @@ class CategoryController extends Controller
         }
     }
 
+    // TODO: fix the Attempt to read property \"category_image\" on null error
     // Update category by id TODO: Refactor this method for better code readability
     public function updateCategoryById(Request $request, string $id)
     {
@@ -201,7 +212,7 @@ class CategoryController extends Controller
 
 
     // Delete category by id
-    public function deleteCategoryById($id)
+    public function deleteCategoryById(string $id)
     {
         try {
             // Find category by id
@@ -214,17 +225,18 @@ class CategoryController extends Controller
                 ], 404);
             }
 
-            // Delete category from the database
-            $category->delete();
-
             // Delete the category image if it exists
             if ($category->category_image) {
-                // Check if the image exists in the directory before attempting to delete it
-                if (Storage::exists('images/categories_images/' . $category->category_image)) {
-                    // Delete the image from the storage
-                    Storage::delete('images/categories_images/' . $category->category_image);
+                // Define the file path relative to the storage disk
+                $filePath = 'images/categories_images/' . $category->category_image;
+
+                // Check if the file exists in the 'public' disk and delete it
+                if (Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
                 }
             }
+            // Delete category from the database
+            $category->delete();
 
             // Return JSON response
             return response()->json([
@@ -238,32 +250,34 @@ class CategoryController extends Controller
         }
     }
 
-    // TODO: Search category by name
-    // public function searchCategoryByName($name)
-    // {
-    //     try {
-    //         // Search for categories by name
-    //         $categories = Category::where('category_name', 'LIKE', '%' . $name . '%')->get();
+    // TODO: add API route for this method
+    // Toggle category status by id
+    public function toggleCategoryStatusById(string $id)
+    {
+        try {
+            // Find category by id
+            $category = Category::find($id);
 
-    //         // Check if any categories are found
-    //         if ($categories->isEmpty()) {
-    //             return response()->json([
-    //                 'message' => 'No categories found with the given name'
-    //             ], 404);
-    //         }
+            // Check if category exists
+            if (!$category) {
+                return response()->json([
+                    'message' => 'Category not found'
+                ], 404);
+            }
 
-    //         // Return JSON response with the found categories
-    //         return response()->json([
-    //             'message' => 'Categories found successfully',
-    //             'categories' => $categories
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'message' => 'An error occurred while searching for categories',
-    //             'errorMessage' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+            // Toggle category status
+            $category->is_active = !$category->is_active;
+            $category->save();
 
-    // TODO: Search category by slug
+            // Return JSON response
+            return response()->json([
+                'message' => "{$category->category_name} category status updated successfully",
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating the category status. Please try again later.',
+                'errorMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
