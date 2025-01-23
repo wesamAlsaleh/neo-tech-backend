@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -48,6 +49,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
 |   C routes that are not protected by sanctum middleware
 |--------------------------------------------------------------------------
  */
+// Client routes for getting categories
+Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
+
 // Admin routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated] and EnsureUserIsAdmin middleware [require the user to be an admin]
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     // Create/Update/Delete Category routes
@@ -56,7 +61,3 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
     Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']); // toggle category status by id "good"
 });
-
-// Client routes for getting categories
-Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
-Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"

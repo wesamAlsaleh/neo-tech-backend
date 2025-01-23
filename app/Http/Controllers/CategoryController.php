@@ -15,14 +15,14 @@ class CategoryController extends Controller
     // Store category in database
     public function createCategory(Request $request)
     {
-        // Validate incoming request
-        $request->validate([
-            'category_name' => 'required|string|max:255',
-            'category_description' => 'nullable|string',
-            'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
-        ]);
 
         try {
+            // Validate incoming request
+            $request->validate([
+                'category_name' => 'required|string|max:255',
+                'category_description' => 'nullable|string',
+                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+            ]);
 
             // Initialize image name
             $imageName = null;
@@ -115,14 +115,14 @@ class CategoryController extends Controller
     // Get category by id
     public function getCategoryById(string $id)
     {
-        // Check if the ID is numeric otherwise return a JSON response
-        if (!is_numeric($id)) {
-            return response()->json([
-                'message' => 'Invalid category ID format',
-            ], 400);
-        }
-
         try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
             // Find category by id
             $category = Category::find($id);
 
@@ -165,23 +165,24 @@ class CategoryController extends Controller
     // Update category by id
     public function updateCategoryById(Request $request, string $id)
     {
-        // Check if the ID is numeric otherwise return a JSON response
-        if (!is_numeric($id)) {
-            return response()->json([
-                'message' => 'Invalid category ID format',
-            ], 400);
-        }
-
-        // Validate incoming request
-        $validatedData = $request->validate([
-            'category_name' => 'nullable|string|max:255',
-            'category_description' => 'nullable|string',
-            'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
-        ]);
 
         DB::beginTransaction(); // Start a database transaction to ensure data integrity
 
         try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
+            // Validate incoming request
+            $validatedData = $request->validate([
+                'category_name' => 'nullable|string|max:255',
+                'category_description' => 'nullable|string',
+                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+            ]);
+
             // Find category by id
             $category = Category::find($id);
 
@@ -249,14 +250,14 @@ class CategoryController extends Controller
     // Delete category by id
     public function deleteCategoryById(string $id)
     {
-        // Check if the ID is numeric otherwise return a JSON response
-        if (!is_numeric($id)) {
-            return response()->json([
-                'message' => 'Invalid category ID format',
-            ], 400);
-        }
-
         try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
             // Find category by id
             $category = Category::find($id);
 
@@ -295,14 +296,14 @@ class CategoryController extends Controller
     // Toggle category status by id
     public function toggleCategoryStatusById(string $id)
     {
-        // Check if the ID is numeric otherwise return a JSON response
-        if (!is_numeric($id)) {
-            return response()->json([
-                'message' => 'Invalid category ID format',
-            ], 400);
-        }
-
         try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
             // Find category by id
             $category = Category::find($id);
 
