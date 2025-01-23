@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -113,135 +114,65 @@ class CategoryController extends Controller
     }
 
     // Get category by id
-    public function getCategoryById(string $id)
-    {
-        try {
-            // Check if the ID is numeric otherwise return a JSON response
-            if (!is_numeric($id)) {
-                return response()->json([
-                    'message' => 'Invalid category ID format',
-                ], 400);
-            }
-
-            // Find category by id
-            $category = Category::find($id);
-
-            // Check if category exists and return JSON response
-            if ($category) {
-                // Get full image URL if an image exists
-                $imageUrl = $category->category_image
-                    ? asset('storage/images/categories_images/' . $category->category_image)
-                    : null;
-
-                // TODO: Add placeholder image URL if no image is available
-                // $imageUrl = $category->category_image
-                //     ? asset('storage/images/categories_images/' . $category->category_image)
-                //     : asset('images/default-category-placeholder.jpg');
-
-                return response()->json([
-                    'category' => [
-                        'id' => $category->id,
-                        'category_name' => $category->category_name,
-                        'category_slug' => $category->category_slug,
-                        'category_description' => $category->category_description,
-                        'is_active' => $category->is_active,
-                        'category_image_url' => $imageUrl,
-                    ],
-                ], 200);
-            } else {
-                // Return JSON response if category is not found
-                return response()->json([
-                    'message' => 'Category not found',
-                ], 404);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'An error occurred while fetching category',
-                'errorMessage' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Update category by id
     public function updateCategoryById(Request $request, string $id)
     {
-
-        DB::beginTransaction(); // Start a database transaction to ensure data integrity
-
         try {
-            // Check if the ID is numeric otherwise return a JSON response
-            if (!is_numeric($id)) {
-                return response()->json([
-                    'message' => 'Invalid category ID format',
-                ], 400);
-            }
-
             // Validate incoming request
             $validatedData = $request->validate([
                 'category_name' => 'nullable|string|max:255',
                 'category_description' => 'nullable|string',
-                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Optional and 2MB max
+                'category_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             // Find category by id
-            $category = Category::find($id);
+            $category = Category::findOrFail($id);
 
-            // Check if category exists
-            if (!$category) {
-                return response()->json([
-                    'message' => 'Category not found'
-                ], 404);
-            }
-
-            // Initialize old image name
-            $imageName = $category->category_image;
-
-
-            // Update category name and slug if name is provided if(the category name is not empty and different from the current name)
+            // Update category name and slug if name is provided
             if (!empty($validatedData['category_name']) && $validatedData['category_name'] !== $category->category_name) {
-                // Update the category name
-                $category->category_name = $validatedData['category_name'];
-
-                // Update the category slug
-                $category->category_slug = strtolower(str_replace(' ', '-', $validatedData['category_name']));
+                $category->category_name = $validatedData['category_name']; // change category name
+                $category->category_slug = strtolower(str_replace(' ', '-', $validatedData['category_name'])); // change category slug
             }
 
-
-            // Check if a new image is uploaded
+            // Handle image upload
             if ($request->hasFile('category_image')) {
-                // Delete the old image if it exists if to replace it with the requested one (there is an old image and the file exists in the storage disk)
-                if ($category->category_image && Storage::disk('public')->exists('images/categories_images/' . $category->category_image)) {
-                    // Delete the old image
+                // Delete old image if exists
+                if ($category->category_image) {
                     Storage::disk('public')->delete('images/categories_images/' . $category->category_image);
                 }
 
-                // Generate a new image name and store the file
+                // Generate and store new image
                 $imageName = uniqid() . '.' . $request->file('category_image')->getClientOriginalExtension();
 
-                // Store the new image in the correct folder storage/app/public/images/categories_images
+                // Store file in the correct folder storage/app/public/images/categories_images/$imageName
                 $request->file('category_image')->storeAs('images/categories_images', $imageName, 'public');
+
+                // Update category image
+                $category->category_image = $imageName;
             }
 
             // Update other fields if provided
             $category->category_description = $validatedData['category_description'] ?? $category->category_description;
-            $category->category_image = $imageName;
 
             // Save the updated category
             $category->save();
 
-            // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category updated successfully",
-                // 'category' => $category,
+                'category' => $category,
             ], 200);
-
-            DB::commit(); // Commit the transaction if everything is successful and no exceptions are thrown
-        } catch (\Exception $e) {
-            DB::rollBack(); // Rollback the transaction if an exception occurs
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'message' => 'An error occurred while updating the category. Please try again later.',
-                'errorMessage' => $e->getMessage(),
-                'request' => $request->all()
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating the category',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -323,6 +254,7 @@ class CategoryController extends Controller
                 'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
             ], 200);
         } catch (\Exception $e) {
+            // TODO: Error handling is not good right now
             return response()->json([
                 'message' => 'An error occurred while updating the category status. Please try again later.',
                 'errorMessage' => $e->getMessage()
