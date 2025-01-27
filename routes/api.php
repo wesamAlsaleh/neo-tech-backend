@@ -70,9 +70,20 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 |--------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good- need to modify the path"
+    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good"
     Route::post('/admin/update-product/{id}', [ProductController::class, 'updateProductById']); // update a product by id "Good"
+    Route::delete('/admin/delete-product/{id}', [ProductController::class, 'deleteProductById']); // delete a product by id ""
+    Route::patch('/admin/toggle-product-status/{id}', [ProductController::class, 'toggleProductStatusById']); // toggle product status by id ""
+    Route::patch('/admin/toggle-product-availability/{id}', [ProductController::class, 'toggleProductAvailabilityById']); // toggle product availability by id ""
 });
 
 // Client routes for getting categories
 Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "good"
+Route::get('/product/{id}', [ProductController::class, 'getProductById']); // get a single product ""
+Route::get('/products-by-name/{product_name}', [ProductController::class, 'searchProductsByName']); // get all products by name ""
+Route::get('/products-by-category/{category_id}', [ProductController::class, 'searchProductsByCategory']); // get all products by category ""
+Route::get('/products-by-rating/{rating}', [ProductController::class, 'searchProductsByRating']); // get all products by rating ""
+Route::get('/products-by-price/{min_price}/{max_price}', [ProductController::class, 'searchProductsByPriceRange']); // get all products by price ""
+Route::get('/products-by-availability/{availability}', [ProductController::class, 'searchProductsByAvailability']); // get all products by availability ""
+Route::get('/products-by-status/{status}', [ProductController::class, 'searchProductsByStatus']); // get all products by status ""
+Route::get('/products-by-slug/{slug}', [ProductController::class, 'searchProductsBySlug']); // get all products by slug ""

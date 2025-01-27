@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +27,7 @@ class ProductController extends Controller
     }
 
     // Get a single product by id
-    public function getProductById($id): JsonResponse
+    public function getProductById(String $id): JsonResponse
     {
         try {
             // Get the product
@@ -37,8 +38,19 @@ class ProductController extends Controller
                 return response()->json(['message' => 'Product not found'], 404);
             }
 
-            // Return the product
-            return response()->json($product, 200);
+            // Transform the product to include full image URLs
+            if ($product->images) {
+                $product->images = array_map(function ($image) {
+                    return asset('storage/' . $image); // Ensure it has the correct URL
+                }, $product->images);
+            }
+
+
+            // Return the product with images
+            return response()->json([
+                'message' => 'Product found',
+                'product' => $product
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['errorMessage' => $e->getMessage()], 500);
         }
@@ -104,7 +116,7 @@ class ProductController extends Controller
     }
 
     // Update a product by id
-    public function updateProductById(Request $request, $id): JsonResponse
+    public function updateProductById(Request $request, String $id): JsonResponse
     {
         try {
             // Validate the request
@@ -169,6 +181,335 @@ class ProductController extends Controller
             // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} updated successfully",
+                'productData' => $product->load('category')
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Delete a product by id
+    public function deleteProductById(String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Check if the product exists
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            // Check if the product has images
+            if (!empty($product->images)) {
+                // Delete the images from storage
+                foreach ($product->images as $image) {
+                    // Get the relative path of the image
+                    $imagePath = str_replace(asset('storage/'), '', $image);
+
+                    // Delete the image from storage
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+
+            // Delete the product
+            $product->delete();
+
+            // Return a success message
+            return response()->json([
+                'message' => "{$product->product_name} deleted successfully"
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by name
+    public function searchProductsByName(String $productName): JsonResponse
+    {
+        try {
+            // Search for products where the name contains the search term (case-insensitive)
+            $products = Product::where('product_name', 'LIKE', "%{$productName}%")->get(); // get all products that match the search term (case-insensitive)
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            /**
+             * Transform the products to include full image URLs
+             * This is done by mapping over the products and appending the full URL to each image path in the images array
+             * If the product has no images, an empty array is returned
+             * The products are then returned as a JSON response
+             */
+            $productsWithImages = $products->map(function ($product) {
+                // Return the product with image URLs included
+                $product->images = $product->images ? array_map(function ($image) {
+                    return asset('storage/' . $image); // Ensure it has the correct URL
+                }, $product->images) : [];
+                return $product;
+            });
+
+            // Return the products
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by category name
+    public function searchProductsByCategory(String $categoryName): JsonResponse
+    {
+        try {
+            // Find the category by name (assuming 'name' column exists in the categories table)
+            $category = Category::where('name', 'LIKE', "%{$categoryName}%")->first(); // get the first category that matches the search term
+
+            // Check if the category exists
+            if (!$category) {
+                return response()->json(['message' => 'Category not found'], 404);
+            }
+
+            // Get the products in the category
+            $products = Product::where('category_id', $category->id)->get();
+
+            // Check if no products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found in this category'], 404);
+            }
+
+            // Transform products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products
+            return response()->json([
+                'message' => 'Products found',
+                'category' => $category->name,
+                'products' => $productsWithImages
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by rating
+    public function searchProductsByRating($rating): JsonResponse
+    {
+        try {
+            // Check if the rating is within the range 0-5
+            if ($rating < 0 || $rating > 5) {
+                return response()->json(['message' => 'Rating must be between 0 and 5'], 400);
+            }
+
+            // Search for products where the rating is equal to the search term
+            $products = Product::where('product_rating', $rating)->get(); // get all products that match the search term
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Transform the products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by price range
+    public function searchProductsByPriceRange($minPrice, $maxPrice): JsonResponse
+    {
+        try {
+            // Search for products where the price is within the range
+            $products = Product::whereBetween('product_price', [$minPrice, $maxPrice])->get(); // get all products that match the search term
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Transform the products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by availability
+    public function searchProductsByAvailability($availability): JsonResponse
+    {
+        try {
+            // Search for products where the availability is equal to the search term
+            $products = Product::where('in_stock', $availability)->get(); // get all products that match the search term
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Transform the products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products and the number of products found
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by status
+    public function searchProductsByStatus($status): JsonResponse
+    {
+        try {
+            // Search for products where the status is equal to the search term
+            $products = Product::where('is_active', $status)->get(); // get all products that match the search term
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Transform the products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Search for products by slug
+    public function searchProductsBySlug($slug): JsonResponse
+    {
+        try {
+            // Search for products where the slug is equal to the search term
+            $products = Product::where('slug', $slug)->get(); // get all products that match the search term
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Transform the products to include full image URLs
+            $productsWithImages = $products->map(function ($product) {
+                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
+                $product->images = $product->images ?
+                    array_map(function ($image) {
+                        return asset('storage/' . $image); // Ensure it has the correct URL
+                    }, $product->images) : [];
+
+                // Return the product
+                return $product;
+            });
+
+            // Return the products
+            return response()->json($productsWithImages, 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // TODO: Search for products by category and price range
+
+
+    // Toggle the status of a product by id
+    public function toggleProductStatusById(String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Check if the product exists
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            // Toggle the status of the product
+            $product->update([
+                'is_active' => !$product->is_active
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} status updated successfully",
+                'productData' => $product->load('category')
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['errorMessage' => $e->getMessage()], 500);
+        }
+    }
+
+    // Toggle the availability of a product by id
+    public function toggleProductAvailabilityById(String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Check if the product exists
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            // Toggle the availability of the product
+            $product->update([
+                'in_stock' => !$product->in_stock
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} availability updated successfully",
                 'productData' => $product->load('category')
             ], 200);
         } catch (\Exception $e) {
