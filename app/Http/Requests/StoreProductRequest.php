@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class StoreProductRequest extends FormRequest
 {
@@ -11,7 +12,12 @@ class StoreProductRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // if the user is not authenticated
+        if (!Auth::check()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -22,7 +28,15 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'product_name' => 'required|string|max:255',
+            'product_description' => 'nullable|string',
+            'product_price' => 'required|numeric|min:0',
+            'product_rating' => 'nullable|integer|min:0|max:5',
+            'slug' => 'required|string|unique:slug',
+            'product_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'is_active' => 'boolean',
+            'in_stock' => 'boolean',
+            'category_id' => 'required|exists:categories,id',
         ];
     }
 }

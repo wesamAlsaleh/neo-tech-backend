@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,3 +63,15 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
     Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']); // toggle category status by id "good"
 });
+
+/**
+|--------------------------------------------------------------------------
+|   Products routes that are not protected by sanctum middleware and EnsureUserIsAdmin middleware
+|--------------------------------------------------------------------------
+ */
+Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
+    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product ""
+});
+
+// Client routes for getting categories
+Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "good"
