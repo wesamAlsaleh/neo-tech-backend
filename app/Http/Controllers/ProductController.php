@@ -38,13 +38,18 @@ class ProductController extends Controller
                 return response()->json(['message' => 'Product not found'], 404);
             }
 
-            // Transform the product to include full image URLs
+            // Check if the product has images
             if ($product->images) {
+                // Prepend the full URL to each image path in the images array
                 $product->images = array_map(function ($image) {
-                    return asset('storage/' . $image); // Ensure it has the correct URL
+                    // Ensure the image path starts with 'storage/' for local assets
+                    if (strpos($image, 'storage/') === false) {
+                        return asset('storage/' . $image); // Add 'storage/' if it's missing
+                    }
+
+                    return $image; // If 'storage/' is already in the path, leave it as is
                 }, $product->images);
             }
-
 
             // Return the product with images
             return response()->json([
@@ -243,10 +248,15 @@ class ProductController extends Controller
              * The products are then returned as a JSON response
              */
             $productsWithImages = $products->map(function ($product) {
-                // Return the product with image URLs included
+                // Ensure images are properly concatenated
                 $product->images = $product->images ? array_map(function ($image) {
-                    return asset('storage/' . $image); // Ensure it has the correct URL
+                    // Check if the image path already contains 'storage/' to avoid duplication
+                    if (strpos($image, 'storage/') === false) {
+                        return asset('storage/' . $image);  // Only prepend 'storage/' if it is not already included
+                    }
+                    return asset($image);  // If it already includes 'storage/', return the asset directly
                 }, $product->images) : [];
+
                 return $product;
             });
 
@@ -482,8 +492,7 @@ class ProductController extends Controller
 
             // Return the updated product
             return response()->json([
-                'message' => "{$product->product_name} status updated successfully",
-                'productData' => $product->load('category')
+                'message' => "{$product->product_name} is now " . ($product->is_active ? 'active' : 'inactive'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['errorMessage' => $e->getMessage()], 500);
@@ -509,8 +518,7 @@ class ProductController extends Controller
 
             // Return the updated product
             return response()->json([
-                'message' => "{$product->product_name} availability updated successfully",
-                'productData' => $product->load('category')
+                'message' => "{$product->product_name} is now " . ($product->in_stock ? 'available' : 'out of stock'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['errorMessage' => $e->getMessage()], 500);
