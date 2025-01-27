@@ -109,7 +109,6 @@ class ProductController extends Controller
                 // 'in_stock' => by default false,
             ]);
 
-
             // Return the product
             return response()->json([
                 'message' => "{$product->product_name} created successfully",
@@ -254,7 +253,9 @@ class ProductController extends Controller
                     if (strpos($image, 'storage/') === false) {
                         return asset('storage/' . $image);  // Only prepend 'storage/' if it is not already included
                     }
-                    return asset($image);  // If it already includes 'storage/', return the asset directly
+
+                    // If it already includes 'storage/', return the asset directly
+                    return asset($image);
                 }, $product->images) : [];
 
                 return $product;
@@ -272,7 +273,7 @@ class ProductController extends Controller
     {
         try {
             // Find the category by name (assuming 'name' column exists in the categories table)
-            $category = Category::where('name', 'LIKE', "%{$categoryName}%")->first(); // get the first category that matches the search term
+            $category = Category::where('category_name', 'LIKE', "%{$categoryName}%")->first(); // get the first category that matches the search term
 
             // Check if the category exists
             if (!$category) {
