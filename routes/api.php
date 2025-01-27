@@ -70,7 +70,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 |--------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product ""
+    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good- need to modify the path"
+    Route::post('/admin/update-product/{id}', [ProductController::class, 'updateProductById']); // update a product by id ""
 });
 
 // Client routes for getting categories
