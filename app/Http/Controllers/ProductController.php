@@ -71,8 +71,8 @@ class ProductController extends Controller
                     // Generate a unique file name
                     $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
 
-                    // Store the image in storage/app/public/products_images
-                    $path = $image->storeAs('products_images', $imageName, 'public');
+                    // Store the image in storage/app/public/images/product_images
+                    $path = $image->storeAs('images/products_images', $imageName, 'public');
 
                     // Push the public URL to the array
                     $imageUrls[] = asset('storage/' . $path);
