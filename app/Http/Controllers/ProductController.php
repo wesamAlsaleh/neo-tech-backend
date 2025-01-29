@@ -125,7 +125,7 @@ class ProductController extends Controller
         try {
             // Validate the request
             $validatedData = $request->validate([
-                'product_name' => 'nullable|string|max:255',
+                'product_name' => 'required|string|max:255',
                 'product_description' => 'nullable|string',
                 'product_price' => 'nullable|numeric|min:0',
                 'product_rating' => 'nullable|integer|min:0|max:5',
