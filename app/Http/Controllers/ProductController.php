@@ -71,9 +71,11 @@ class ProductController extends Controller
                 'product_description' => 'nullable|string',
                 'product_price' => 'required|numeric|min:0',
                 'product_rating' => 'nullable|integer|min:0|max:5',
-                'product_images' => 'nullable|array', // Ensure it's an array
-                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Validate images
+                'product_images' => 'nullable|array',
+                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 'category_id' => 'required|exists:categories,id',
+                'is_active' => 'required|boolean',
+                'in_stock' => 'required|boolean',
             ]);
 
             // Initialize an empty array to store the image paths as URLs (public)
@@ -105,8 +107,8 @@ class ProductController extends Controller
                 'slug' => $slug,
                 'images' => $imageUrls, // Store as JSON
                 'category_id' => $validatedData['category_id'],
-                // 'is_active' => by default false,
-                // 'in_stock' => by default false,
+                'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
+                'in_stock' => $validatedData['in_stock'] ?? false, // 'in_stock' => by default false,
             ]);
 
             // Return the product
