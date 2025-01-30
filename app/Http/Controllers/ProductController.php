@@ -22,7 +22,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($products, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -57,7 +57,7 @@ class ProductController extends Controller
                 'product' => $product
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -115,7 +115,7 @@ class ProductController extends Controller
                 'productData' => $product->load('category')
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -188,7 +188,7 @@ class ProductController extends Controller
                 'productData' => $product->load('category')
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -224,7 +224,7 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} deleted successfully"
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -264,7 +264,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -307,7 +307,7 @@ class ProductController extends Controller
                 'products' => $productsWithImages
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -343,7 +343,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -374,7 +374,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -405,7 +405,7 @@ class ProductController extends Controller
             // Return the products and the number of products found
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -436,7 +436,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -467,7 +467,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json($productsWithImages, 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -496,7 +496,7 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} is now " . ($product->is_active ? 'active' : 'inactive'),
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -522,7 +522,7 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} is now " . ($product->in_stock ? 'available' : 'out of stock'),
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['errorMessage' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 }
