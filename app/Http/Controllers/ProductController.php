@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -72,7 +73,7 @@ class ProductController extends Controller
                 'product_price' => 'required|numeric|min:0',
                 'product_rating' => 'nullable|integer|min:0|max:5',
                 'product_images' => 'nullable|array',
-                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
                 'is_active' => 'required|boolean',
                 'in_stock' => 'required|boolean',
@@ -86,36 +87,53 @@ class ProductController extends Controller
 
             // Check if images are provided
             if ($request->hasFile('product_images')) {
+                // Loop through each image and store it in storage
                 foreach ($request->file('product_images') as $image) {
-                    // Generate a unique file name
-                    $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
+                    try {
+                        // Generate a unique file name e.g. 612f7b7b618f4.jpg
+                        $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
 
-                    // Store the image in storage/app/public/images/product_images
-                    $path = $image->storeAs('images/products_images', $imageName, 'public');
+                        // Store the image in storage/app/public/images/product_images
+                        $path = $image->storeAs('images/products_images', $imageName, 'public');
 
-                    // Push the public URL to the array
-                    $imageUrls[] = asset('storage/' . $path);
+                        // Push the public URL to the array
+                        $imageUrls[] = asset('storage/' . $path);
+                    } catch (\Exception $e) {
+                        return response()->json(['message' => 'Failed to upload one or more images.'], 500);
+                    }
                 }
             }
 
-            // Create the product
-            $product = Product::create([
-                'product_name' => $validatedData['product_name'],
-                'product_description' => $validatedData['product_description'],
-                'product_price' => $validatedData['product_price'],
-                'product_rating' => $validatedData['product_rating'],
-                'slug' => $slug,
-                'images' => $imageUrls, // Store as JSON
-                'category_id' => $validatedData['category_id'],
-                'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
-                'in_stock' => $validatedData['in_stock'] ?? false, // 'in_stock' => by default false,
-            ]);
+            try {
+                // Create the product
+                $product = Product::create([
+                    'product_name' => $validatedData['product_name'],
+                    'product_description' => $validatedData['product_description'],
+                    'product_price' => $validatedData['product_price'],
+                    'product_rating' => $validatedData['product_rating'],
+                    'slug' => $slug,
+                    'images' => $imageUrls, // Store as JSON
+                    'category_id' => $validatedData['category_id'],
+                    'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
+                    'in_stock' => $validatedData['in_stock'] ?? false, // 'in_stock' => by default false,
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Failed to create the product.'], 500);
+            }
+
+
 
             // Return the product
             return response()->json([
                 'message' => "{$product->product_name} created successfully",
                 'productData' => $product->load('category')
             ], 201);
+        } catch (ValidationException $e) {
+            // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
