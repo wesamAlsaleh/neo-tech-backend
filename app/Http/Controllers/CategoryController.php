@@ -5,15 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
-    // TODO: Remove Error Messages from the response due to security reasons in production
-
     // Store category in database
     public function createCategory(Request $request)
     {
@@ -53,13 +49,15 @@ class CategoryController extends Controller
             // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category created successfully",
-                // 'request' => $request->all(),
-                // 'category' => $category
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while creating the category. Please try again later.',
-                'errorMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -68,9 +66,6 @@ class CategoryController extends Controller
     public function getAllCategories()
     {
         try {
-            // TODO: Add Pagination
-            // $categories = Category::paginate(10); // 10 categories per page
-
             // Fetch all categories from the database
             $categories = Category::all();
 
@@ -82,11 +77,6 @@ class CategoryController extends Controller
                     $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
                 } else {
                     $category->category_image_url = null; // Optional: Handle categories with no image
-
-                    // TODO: Add placeholder image URL if no image is available
-                    // $category->category_image_url = $category->category_image
-                    //     ? asset('storage/images/categories_images/' . $category->category_image)
-                    //     : asset('images/default-category-placeholder.jpg');
                 }
 
                 return $category;
@@ -100,8 +90,7 @@ class CategoryController extends Controller
         } catch (\Exception $e) {
             // Handle exceptions
             return response()->json([
-                'message' => 'An error occurred while fetching categories',
-                'errorMessage' => $e->getMessage(),
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -160,12 +149,11 @@ class CategoryController extends Controller
             ], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Category not found',
+                'message' => $e->getMessage(),
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred while updating the category',
-                'error' => $e->getMessage(),
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -209,6 +197,10 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => "{$category->category_name} category deleted successfully"
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found',
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while deleting the category. Please try again later.',
@@ -246,11 +238,13 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
             ], 200);
-        } catch (\Exception $e) {
-            // TODO: Error handling is not good right now
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'An error occurred while updating the category status. Please try again later.',
-                'errorMessage' => $e->getMessage()
+                'message' => 'Category not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
