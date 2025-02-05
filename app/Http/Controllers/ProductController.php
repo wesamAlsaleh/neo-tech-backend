@@ -6,6 +6,9 @@ use App\Models\Product;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
+use GuzzleHttp\Psr7\Query;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
+
+    // TODO: An unexpected error occurred for generic exceptions instead of exposing the exception message ($e->getMessage()), which might reveal sensitive information in production.
+
     // Get all products
     public function getAllProducts(): JsonResponse
     {
@@ -71,7 +77,7 @@ class ProductController extends Controller
                 'product_name' => 'required|string|max:255',
                 'product_description' => 'nullable|string',
                 'product_price' => 'required|numeric|min:0',
-                'product_rating' => 'nullable|integer|min:0|max:5',
+                'product_rating' => 'integer|min:0|max:5',
                 'product_images' => 'nullable|array',
                 'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
@@ -104,8 +110,9 @@ class ProductController extends Controller
                 }
             }
 
+
+            // Create the product
             try {
-                // Create the product
                 $product = Product::create([
                     'product_name' => $validatedData['product_name'],
                     'product_description' => $validatedData['product_description'],
@@ -117,10 +124,13 @@ class ProductController extends Controller
                     'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
                     'in_stock' => $validatedData['in_stock'] ?? false, // 'in_stock' => by default false,
                 ]);
-            } catch (\Exception $e) {
-                return response()->json(['message' => 'Failed to create the product.'], 500);
+            } catch (ValidationException $e) {
+                // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
             }
-
 
 
             // Return the product
@@ -128,12 +138,6 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} created successfully",
                 'productData' => $product->load('category')
             ], 201);
-        } catch (ValidationException $e) {
-            // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -148,7 +152,7 @@ class ProductController extends Controller
                 'product_name' => 'required|string|max:255',
                 'product_description' => 'nullable|string',
                 'product_price' => 'nullable|numeric|min:0',
-                'product_rating' => 'nullable|integer|min:0|max:5',
+                'product_rating' => 'integer|min:0|max:5',
                 'product_images' => 'nullable|array', // Ensure it's an array
                 'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Validate images
                 'category_id' => 'required|exists:categories,id',
@@ -167,46 +171,62 @@ class ProductController extends Controller
 
             // If new images are uploaded, replace the old ones
             if ($request->hasFile('product_images')) {
-                // Delete old images from storage (optional)
-                foreach ($product->images as $oldImage) {
-                    // Get the path of the image
-                    $oldImagePath = str_replace(asset('storage/'), '', $oldImage);
+                try {
+                    // Delete old images from storage (optional)
+                    foreach ($product->images as $oldImage) {
+                        // Get the path of the image
+                        $oldImagePath = str_replace(asset('storage/'), '', $oldImage);
 
-                    // Delete the image from storage
-                    Storage::disk('public')->delete($oldImagePath);
-                }
+                        // Delete the image from storage
+                        Storage::disk('public')->delete($oldImagePath);
+                    }
 
-                $imageUrls = []; // Reset images
+                    $imageUrls = []; // Reset images
 
-                // Store the new images
-                foreach ($request->file('product_images') as $image) {
-                    // Generate a unique file name for the image e.g. 612f7b7b618f4.jpg
-                    $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
+                    // Store the new images
+                    foreach ($request->file('product_images') as $image) {
+                        // Generate a unique file name for the image e.g. 612f7b7b618f4.jpg
+                        $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
 
-                    // Store the image in storage/app/public/products_images
-                    $path = $image->storeAs('products_images', $imageName, 'public');
+                        // Store the image in storage/app/public/products_images
+                        $path = $image->storeAs('products_images', $imageName, 'public');
 
-                    // Push the public URL to the array
-                    $imageUrls[] = asset('storage/' . $path);
+                        // Push the public URL to the array
+                        $imageUrls[] = asset('storage/' . $path);
+                    }
+                } catch (\Exception $e) {
+                    return response()->json(['message' => 'Failed to upload one or more images.'], 500);
                 }
             }
 
             // Update the product details
-            $product->update([
-                'product_name' => $validatedData['product_name'],
-                'product_description' => $validatedData['product_description'],
-                'product_price' => $validatedData['product_price'],
-                'product_rating' => $validatedData['product_rating'],
-                'slug' => strtolower(str_replace(' ', '-', $validatedData['product_name'])),
-                'images' => $imageUrls, // Update images
-                'category_id' => $validatedData['category_id'],
-            ]);
+            try {
+
+
+                $product->update([
+                    'product_name' => $validatedData['product_name'],
+                    'product_description' => $validatedData['product_description'],
+                    'product_price' => $validatedData['product_price'],
+                    'product_rating' => $validatedData['product_rating'],
+                    'slug' => strtolower(str_replace(' ', '-', $validatedData['product_name'])),
+                    'images' => $imageUrls, // Update images
+                    'category_id' => $validatedData['category_id'],
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Failed to update the product.'], 500);
+            }
 
             // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} updated successfully",
                 'productData' => $product->load('category')
             ], 200);
+        } catch (ValidationException $e) {
+            // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -257,7 +277,7 @@ class ProductController extends Controller
 
             // Check if products were found
             if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
+                return response()->json(['message' => 'Product not found'], 404);
             }
 
             /**
@@ -283,6 +303,10 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json($productsWithImages, 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'Product not found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -326,6 +350,10 @@ class ProductController extends Controller
                 'category' => $category->name,
                 'products' => $productsWithImages
             ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'No products found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -362,6 +390,10 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json($productsWithImages, 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'No products found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -393,6 +425,10 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json($productsWithImages, 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'No products found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -455,6 +491,10 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json($productsWithImages, 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'No products found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
@@ -486,13 +526,14 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json($productsWithImages, 200);
+        } catch (ModelNotFoundException) {
+            return response()->json(['message' => 'No products found'], 404);
+        } catch (QueryException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
-
-    // TODO: Search for products by category and price range
-
 
     // Toggle the status of a product by id
     public function toggleProductStatusById(String $id): JsonResponse
