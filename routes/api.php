@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,3 +63,27 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
     Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']); // toggle category status by id "good"
 });
+
+/**
+|--------------------------------------------------------------------------
+|   Products routes that are not protected by sanctum middleware and EnsureUserIsAdmin middleware
+|--------------------------------------------------------------------------
+ */
+Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
+    Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good"
+    Route::post('/admin/update-product/{id}', [ProductController::class, 'updateProductById']); // update a product by id "Good"
+    Route::delete('/admin/delete-product/{id}', [ProductController::class, 'deleteProductById']); // delete a product by id "Good"
+    Route::patch('/admin/toggle-product-status/{id}', [ProductController::class, 'toggleProductStatusById']); // toggle product status by id "Good"
+    Route::patch('/admin/toggle-product-availability/{id}', [ProductController::class, 'toggleProductAvailabilityById']); // toggle product availability by id "Good"
+});
+
+// Client routes for getting categories
+Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "Good"
+Route::get('/products/{id}', [ProductController::class, 'getProductById']); // get a single product "Good"
+Route::get('/products-by-name/{product_name}', [ProductController::class, 'searchProductsByName']); // get all products by name "Good"
+Route::get('/products-by-category/{category_name}', [ProductController::class, 'searchProductsByCategory']); // get all products by category "Good"
+Route::get('/products-by-rating/{rating}', [ProductController::class, 'searchProductsByRating']); // get all products by rating "Good"
+Route::get('/products-by-slug/{slug}', [ProductController::class, 'searchProductsBySlug']); // get all products by slug "Good"
+Route::get('/products-by-price/{min_price}/{max_price}', [ProductController::class, 'searchProductsByPriceRange']); // get all products by price "I think it is good"
+Route::get('/products-by-availability/{availability}', [ProductController::class, 'searchProductsByAvailability']); // get all products by availability "Good"
+Route::get('/products-by-status/{status}', [ProductController::class, 'searchProductsByStatus']); // get all products by status "Good"

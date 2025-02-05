@@ -74,14 +74,6 @@ class CategoryController extends Controller
             // Fetch all categories from the database
             $categories = Category::all();
 
-            // If categories are empty, return a JSON response
-            if ($categories->isEmpty()) {
-                return response()->json([
-                    'message' => 'No categories found',
-                    'categories' => [],
-                ], 404);
-            }
-
             // Append the full image URL to each category
             $categories->transform(function ($category) {
                 // Check if category has an image
