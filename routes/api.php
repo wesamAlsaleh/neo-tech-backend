@@ -62,6 +62,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
     Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']); // toggle category status by id "good"
+    Route::delete('/admin/soft-delete-category/{id}', [CategoryController::class, 'softDeleteCategoryById']); // soft delete category by id ""
+
 });
 
 /**

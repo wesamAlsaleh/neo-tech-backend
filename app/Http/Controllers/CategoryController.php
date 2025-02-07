@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -55,9 +56,15 @@ class CategoryController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Database error occurred while creating the category.',
+                'errorMessage' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while creating the category. Please try again later.',
+                'errorMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -245,6 +252,51 @@ class CategoryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Handle soft delete
+    public function softDeleteCategoryById(string $id)
+    {
+        try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
+            // Find category by id
+            $category = Category::find($id);
+
+            // Check if category exists
+            if (!$category) {
+                return response()->json([
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            // Soft delete category
+            $category->delete();
+
+            // Return JSON response
+            return response()->json([
+                'message' => "{$category->category_name} category soft deleted successfully",
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found',
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Database error occurred while soft deleting the category.',
+                'errorMessage' => $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while soft deleting the category. Please try again later.',
+                'errorMessage' => $e->getMessage()
             ], 500);
         }
     }
