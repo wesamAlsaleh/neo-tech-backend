@@ -11,6 +11,47 @@ use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
+    // Get all categories
+    public function getCategories()
+    {
+        try {
+            // Fetch all categories from the database
+            $categories = Category::all();
+
+            // Append the full image URL to each category
+            $categories->transform(function ($category) {
+                // Check if category has an image
+                if ($category->category_image) {
+                    // Append the full image URL to the category object
+                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
+                } else {
+                    $category->category_image_url = null; // Optional: Handle categories with no image
+                }
+
+                return $category;
+            });
+
+            // If no categories are found, return a JSON response as empty array
+            if ($categories->isEmpty()) {
+                return response()->json([
+                    'message' => 'No categories found',
+                    'categories' => [],
+                ], 200);
+            }
+
+            // Return the response
+            return response()->json([
+                'message' => 'Categories fetched successfully',
+                'categories' => $categories,
+            ], 200);
+        } catch (\Exception $e) {
+            // Handle exceptions
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Store category in database
     public function createCategory(Request $request)
     {
@@ -65,39 +106,6 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => 'An error occurred while creating the category. Please try again later.',
                 'errorMessage' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    // Get all categories
-    public function getAllCategories()
-    {
-        try {
-            // Fetch all categories from the database
-            $categories = Category::all();
-
-            // Append the full image URL to each category
-            $categories->transform(function ($category) {
-                // Check if category has an image
-                if ($category->category_image) {
-                    // Append the full image URL to the category object
-                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
-                } else {
-                    $category->category_image_url = null; // Optional: Handle categories with no image
-                }
-
-                return $category;
-            });
-
-            // Return the response
-            return response()->json([
-                'message' => 'Categories fetched successfully',
-                'categories' => $categories,
-            ], 200);
-        } catch (\Exception $e) {
-            // Handle exceptions
-            return response()->json([
-                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -216,47 +224,7 @@ class CategoryController extends Controller
         }
     }
 
-    // Toggle category status by id
-    public function toggleCategoryStatusById(string $id)
-    {
-        try {
-            // Check if the ID is numeric otherwise return a JSON response
-            if (!is_numeric($id)) {
-                return response()->json([
-                    'message' => 'Invalid category ID format',
-                ], 400);
-            }
-
-            // Find category by id
-            $category = Category::find($id);
-
-            // Check if category exists
-            if (!$category) {
-                return response()->json([
-                    'message' => 'Category not found'
-                ], 404);
-            }
-
-            // Toggle category status
-            $category->is_active = !$category->is_active;
-            $category->save();
-
-            // Return JSON response
-            return response()->json([
-                'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Category not found',
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    // Handle soft delete
+    // Soft delete category by id
     public function softDeleteCategoryById(string $id)
     {
         try {
@@ -297,6 +265,46 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => 'An error occurred while soft deleting the category. Please try again later.',
                 'errorMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Toggle category status by id
+    public function toggleCategoryStatusById(string $id)
+    {
+        try {
+            // Check if the ID is numeric otherwise return a JSON response
+            if (!is_numeric($id)) {
+                return response()->json([
+                    'message' => 'Invalid category ID format',
+                ], 400);
+            }
+
+            // Find category by id
+            $category = Category::find($id);
+
+            // Check if category exists
+            if (!$category) {
+                return response()->json([
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            // Toggle category status
+            $category->is_active = !$category->is_active;
+            $category->save();
+
+            // Return JSON response
+            return response()->json([
+                'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Category not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

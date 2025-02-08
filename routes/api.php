@@ -52,7 +52,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 |--------------------------------------------------------------------------
  */
 // Client routes for getting categories
-Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/categories', [CategoryController::class, 'getCategories']); // get all categories "good"
 Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
 
 // Admin routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated] and EnsureUserIsAdmin middleware [require the user to be an admin]

@@ -13,6 +13,6 @@ class Category extends Model
         'category_name',
         'category_slug',
         'category_description',
-        'category_image'
+        'category_image',
     ];
 }
