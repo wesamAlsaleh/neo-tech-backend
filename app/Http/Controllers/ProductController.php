@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
-use GuzzleHttp\Psr7\Query;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -14,22 +13,33 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
+use Illuminate\Support\Facades\Log;
+use phpDocumentor\Reflection\Types\Boolean;
+
 class ProductController extends Controller
 {
-
-    // TODO: An unexpected error occurred for generic exceptions instead of exposing the exception message ($e->getMessage()), which might reveal sensitive information in production.
 
     // Get all products
     public function getAllProducts(): JsonResponse
     {
         try {
             // Get all products
-            $products = Product::all();
+            $products = Product::paginate(10); // get all products with pagination (10 products per page)
 
             // Return the products
-            return response()->json($products, 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Products retrieved successfully',
+                'products' => $products
+            ], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            // Log the actual error for debugging
+            Log::error('Error fetching products: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while fetching products. Please try again later.',
+            ], 500);
         }
     }
 
@@ -37,34 +47,49 @@ class ProductController extends Controller
     public function getProductById(String $id): JsonResponse
     {
         try {
-            // Get the product
-            $product = Product::find($id);
+            // Attempt to find product or throw 404
+            $product = Product::findOrFail($id);
 
-            // Check if the product exists
-            if (!$product) {
-                return response()->json(['message' => 'Product not found'], 404);
-            }
+            // Ensure images are an array before modifying them
+            $images = is_array($product->images) ? $product->images : [];
 
-            // Check if the product has images
-            if ($product->images) {
-                // Prepend the full URL to each image path in the images array
-                $product->images = array_map(function ($image) {
-                    // Ensure the image path starts with 'storage/' for local assets
-                    if (strpos($image, 'storage/') === false) {
-                        return asset('storage/' . $image); // Add 'storage/' if it's missing
-                    }
+            // // Check if the product has images
+            // if ($product->images) {
+            //     // Prepend the full URL to each image path in the images array
+            //     $product->images = array_map(function ($image) {
+            //         // Ensure the image path starts with 'storage/' for local assets
+            //         if (strpos($image, 'storage/') === false) {
+            //             return asset('storage/' . $image); // Add 'storage/' if it's missing
+            //         }
 
-                    return $image; // If 'storage/' is already in the path, leave it as is
-                }, $product->images);
-            }
+            //         return $image; // If 'storage/' is already in the path, leave it as is
+            //     }, $product->images);
+            // }
+
+            // Prepend full URL to images
+            $product->images = array_map(function ($image) {
+                return asset('storage/' . ltrim($image, '/')); // Ensure path consistency
+            }, $images);
 
             // Return the product with images
             return response()->json([
+                'success' => true,
                 'message' => 'Product found',
                 'product' => $product
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            // Log the actual error for debugging
+            Log::error('Error fetching product: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while retrieving the product.'
+            ], 500);
         }
     }
 
@@ -74,15 +99,18 @@ class ProductController extends Controller
         try {
             // Validate the request
             $validatedData = $request->validate([
-                'product_name' => 'required|string|max:255',
+                'product_name' => 'required|string|max:255|unique:products,product_name',
                 'product_description' => 'nullable|string',
                 'product_price' => 'required|numeric|min:0',
-                'product_rating' => 'integer|min:0|max:5',
+                'product_rating' => 'nullable|numeric|min:0|max:5',
+                'product_stock' => 'nullable|integer|min:0',
+                'product_sold' => 'nullable|integer|min:0',
+                'product_view' => 'nullable|integer|min:0',
+                'product_barcode' => 'required|string|unique:products,product_barcode|max:50',
                 'product_images' => 'nullable|array',
-                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB per image
+                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
-                'is_active' => 'required|boolean',
-                'in_stock' => 'required|boolean',
+                'is_active' => 'nullable|boolean',
             ]);
 
             // Initialize an empty array to store the image paths as URLs (public)
@@ -91,7 +119,14 @@ class ProductController extends Controller
             // Create the slug from the product name
             $slug = strtolower(str_replace(' ', '-', $validatedData['product_name']));
 
-            // Check if images are provided
+            // Check for existing slug and append a number if necessary
+            $slugBase = $slug;
+            $counter = 1;
+            while (Product::where('slug', $slug)->exists()) {
+                $slug = $slugBase . '-' . $counter++;
+            }
+
+            // Check if images are provided then iterate over them to store in storage
             if ($request->hasFile('product_images')) {
                 // Loop through each image and store it in storage
                 foreach ($request->file('product_images') as $image) {
@@ -99,8 +134,11 @@ class ProductController extends Controller
                         // Generate a unique file name e.g. 612f7b7b618f4.jpg
                         $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
 
-                        // Store the image in storage/app/public/images/product_images
-                        $path = $image->storeAs('images/products_images', $imageName, 'public');
+                        // Create a folder name based on the product name
+                        $folderName = strtolower(str_replace(' ', '_', $validatedData['product_name']));
+
+                        // Store the image in storage/app/public/images/products_images/{productName}
+                        $path = $image->storeAs("images/products_images/{$folderName}", $imageName, 'public');
 
                         // Push the public URL to the array
                         $imageUrls[] = asset('storage/' . $path);
@@ -112,25 +150,21 @@ class ProductController extends Controller
 
 
             // Create the product
-            try {
-                $product = Product::create([
-                    'product_name' => $validatedData['product_name'],
-                    'product_description' => $validatedData['product_description'],
-                    'product_price' => $validatedData['product_price'],
-                    'product_rating' => $validatedData['product_rating'],
-                    'slug' => $slug,
-                    'images' => $imageUrls, // Store as JSON
-                    'category_id' => $validatedData['category_id'],
-                    'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
-                    'in_stock' => $validatedData['in_stock'] ?? false, // 'in_stock' => by default false,
-                ]);
-            } catch (ValidationException $e) {
-                // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
-                return response()->json([
-                    'message' => 'Validation failed',
-                    'errors' => $e->errors()
-                ], 422);
-            }
+            $product = Product::create([
+                'product_name' => $validatedData['product_name'],
+                'product_description' => $validatedData['product_description'],
+                'product_price' => $validatedData['product_price'],
+                'product_rating' => $validatedData['product_rating'] ?? 0, // 'product_rating' => by default 0,
+                'product_stock' => $validatedData['product_stock'] ?? 0,
+                'product_sold' => $validatedData['product_sold'] ?? 0,
+                'product_view' => $validatedData['product_view'] ?? 0,
+                'product_barcode' => $validatedData['product_barcode'],
+                'slug' => $slug, // 'slug' => generated from product name,
+                'images' => $imageUrls, // Store as JSON
+                'category_id' => $validatedData['category_id'],
+                'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
+            ]);
+
 
 
             // Return the product
@@ -152,27 +186,40 @@ class ProductController extends Controller
                 'product_name' => 'required|string|max:255',
                 'product_description' => 'nullable|string',
                 'product_price' => 'nullable|numeric|min:0',
-                'product_rating' => 'integer|min:0|max:5',
-                'product_images' => 'nullable|array', // Ensure it's an array
-                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // Validate images
+                'product_rating' => 'nullable|numeric|min:0|max:5',
+                'product_stock' => 'nullable|integer|min:0',
+                'product_sold' => 'nullable|integer|min:0',
+                'product_view' => 'nullable|integer|min:0',
+                'product_barcode' => 'nullable|string|max:50',
+                'product_images' => 'nullable|array',
+                'product_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
+                'is_active' => 'nullable|boolean',
             ]);
 
             // Find the product
             $product = Product::findOrFail($id);
 
-            // Check if the product exists
-            if (!$product) {
-                return response()->json(['message' => 'Product not found'], 404);
-            }
-
-            // Initialize an empty array to store the new image URLs
+            // Initialize an empty array to store the image URLs
             $imageUrls = $product->images ?? []; // Keep existing images if not updated
+
+            // If the name is updated, update the slug
+            if ($validatedData['product_name'] !== $product->product_name) {
+                // Create the slug from the product name
+                $slug = strtolower(str_replace(' ', '-', $validatedData['product_name']));
+
+                // Check for existing slug and append a number if necessary
+                $slugBase = $slug;
+                $counter = 1;
+                while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                    $slug = $slugBase . '-' . $counter++;
+                }
+            }
 
             // If new images are uploaded, replace the old ones
             if ($request->hasFile('product_images')) {
                 try {
-                    // Delete old images from storage (optional)
+                    // Delete old images from storage
                     foreach ($product->images as $oldImage) {
                         // Get the path of the image
                         $oldImagePath = str_replace(asset('storage/'), '', $oldImage);
@@ -183,13 +230,16 @@ class ProductController extends Controller
 
                     $imageUrls = []; // Reset images
 
-                    // Store the new images
+                    // Loop through new images and store them
                     foreach ($request->file('product_images') as $image) {
                         // Generate a unique file name for the image e.g. 612f7b7b618f4.jpg
                         $imageName = uniqid() . '.' . $image->getClientOriginalExtension();
 
-                        // Store the image in storage/app/public/products_images
-                        $path = $image->storeAs('products_images', $imageName, 'public');
+                        // Create a folder name based on the product name (whether updated or not)
+                        $folderName = strtolower(str_replace(' ', '_', $validatedData['product_name']));
+
+                        // Store the image in storage/app/public/products_images/{productName}
+                        $path = $image->storeAs("images/products_images/{$folderName}", $imageName, 'public');
 
                         // Push the public URL to the array
                         $imageUrls[] = asset('storage/' . $path);
@@ -200,21 +250,21 @@ class ProductController extends Controller
             }
 
             // Update the product details
-            try {
+            $product->update([
+                'product_name' => $validatedData['product_name'],
+                'product_description' => $validatedData['product_description'],
+                'product_price' => $validatedData['product_price'],
+                'product_rating' => $validatedData['product_rating'] ?? 0,
+                'product_stock' => $validatedData['product_stock'] ?? 0,
+                'product_sold' => $validatedData['product_sold'] ?? 0,
+                'product_view' => $validatedData['product_view'] ?? 0,
+                'product_barcode' => $validatedData['product_barcode'] ?? $product->product_barcode,
+                'slug' => $slug, // Generated slug
+                'images' => $imageUrls, // Updated images
+                'category_id' => $validatedData['category_id'],
+                'is_active' => $validatedData['is_active'] ?? $product->is_active, // Preserve existing if not updated
+            ]);
 
-
-                $product->update([
-                    'product_name' => $validatedData['product_name'],
-                    'product_description' => $validatedData['product_description'],
-                    'product_price' => $validatedData['product_price'],
-                    'product_rating' => $validatedData['product_rating'],
-                    'slug' => strtolower(str_replace(' ', '-', $validatedData['product_name'])),
-                    'images' => $imageUrls, // Update images
-                    'category_id' => $validatedData['category_id'],
-                ]);
-            } catch (\Exception $e) {
-                return response()->json(['message' => 'Failed to update the product.'], 500);
-            }
 
             // Return the updated product
             return response()->json([
@@ -236,7 +286,7 @@ class ProductController extends Controller
     public function deleteProductById(String $id): JsonResponse
     {
         try {
-            // Find the product
+            // Find the product, even if it is soft deleted
             $product = Product::findOrFail($id);
 
             // Check if the product exists
@@ -244,19 +294,7 @@ class ProductController extends Controller
                 return response()->json(['message' => 'Product not found'], 404);
             }
 
-            // Check if the product has images
-            if (!empty($product->images)) {
-                // Delete the images from storage
-                foreach ($product->images as $image) {
-                    // Get the relative path of the image
-                    $imagePath = str_replace(asset('storage/'), '', $image);
-
-                    // Delete the image from storage
-                    Storage::disk('public')->delete($imagePath);
-                }
-            }
-
-            // Delete the product
+            // Soft delete the product (sets 'deleted_at' to the current timestamp)
             $product->delete();
 
             // Return a success message
@@ -267,6 +305,31 @@ class ProductController extends Controller
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }
+
+    // Restore a soft-deleted product by id
+    public function restoreProductById(String $id): JsonResponse
+    {
+        try {
+            // Find the soft-deleted product
+            $product = Product::withTrashed()->find($id);
+
+            // Check if the product exists, even if it's deleted
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            // Restore the product
+            $product->restore();
+
+            // Return a success message
+            return response()->json([
+                'message' => "{$product->product_name} restored successfully"
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
 
     // Search for products by name
     public function searchProductsByName(String $productName): JsonResponse
@@ -305,53 +368,6 @@ class ProductController extends Controller
             return response()->json($productsWithImages, 200);
         } catch (ModelNotFoundException) {
             return response()->json(['message' => 'Product not found'], 404);
-        } catch (QueryException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
-
-    // Search for products by category name
-    public function searchProductsByCategory(String $categoryName): JsonResponse
-    {
-        try {
-            // Find the category by name (assuming 'name' column exists in the categories table)
-            $category = Category::where('category_name', 'LIKE', "%{$categoryName}%")->first(); // get the first category that matches the search term
-
-            // Check if the category exists
-            if (!$category) {
-                return response()->json(['message' => 'Category not found'], 404);
-            }
-
-            // Get the products in the category
-            $products = Product::where('category_id', $category->id)->get();
-
-            // Check if no products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found in this category'], 404);
-            }
-
-            // Transform products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
-
-                // Return the product
-                return $product;
-            });
-
-            // Return the products
-            return response()->json([
-                'message' => 'Products found',
-                'category' => $category->name,
-                'products' => $productsWithImages
-            ], 200);
-        } catch (ModelNotFoundException) {
-            return response()->json(['message' => 'No products found'], 404);
         } catch (QueryException $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         } catch (\Exception $e) {
@@ -434,39 +450,9 @@ class ProductController extends Controller
         }
     }
 
-    // Search for products by availability
-    public function searchProductsByAvailability($availability): JsonResponse
-    {
-        try {
-            // Search for products where the availability is equal to the search term
-            $products = Product::where('in_stock', $availability)->get(); // get all products that match the search term
-
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
-            }
-
-            // Transform the products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
-
-                // Return the product
-                return $product;
-            });
-
-            // Return the products and the number of products found
-            return response()->json($productsWithImages, 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
 
     // Search for products by status
-    public function searchProductsByStatus($status): JsonResponse
+    public function searchProductsByStatus(Boolean $status): JsonResponse
     {
         try {
             // Search for products where the status is equal to the search term
@@ -555,32 +541,6 @@ class ProductController extends Controller
             // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} is now " . ($product->is_active ? 'active' : 'inactive'),
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
-
-    // Toggle the availability of a product by id
-    public function toggleProductAvailabilityById(String $id): JsonResponse
-    {
-        try {
-            // Find the product
-            $product = Product::findOrFail($id);
-
-            // Check if the product exists
-            if (!$product) {
-                return response()->json(['message' => 'Product not found'], 404);
-            }
-
-            // Toggle the availability of the product
-            $product->update([
-                'in_stock' => !$product->in_stock
-            ]);
-
-            // Return the updated product
-            return response()->json([
-                'message' => "{$product->product_name} is now " . ($product->in_stock ? 'available' : 'out of stock'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
