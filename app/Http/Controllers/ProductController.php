@@ -452,7 +452,7 @@ class ProductController extends Controller
 
 
     // Search for products by status
-    public function searchProductsByStatus(Boolean $status): JsonResponse
+    public function searchProductsByStatus(bool $status): JsonResponse
     {
         try {
             // Search for products where the status is equal to the search term
