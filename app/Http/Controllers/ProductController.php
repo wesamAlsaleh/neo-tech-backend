@@ -12,9 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-
 use Illuminate\Support\Facades\Log;
-use phpDocumentor\Reflection\Types\Boolean;
 
 class ProductController extends Controller
 {
@@ -30,7 +28,7 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Products retrieved successfully',
-                'products' => $products
+                'products' => $products->toArray()
             ], 200);
         } catch (\Exception $e) {
             // Log the actual error for debugging
