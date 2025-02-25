@@ -171,7 +171,12 @@ class ProductController extends Controller
                 'productData' => $product->load('category')
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(
+                [
+                    'message' => $e->getMessage()
+                ],
+                500
+            );
         }
     }
 
@@ -212,6 +217,8 @@ class ProductController extends Controller
                 while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
                     $slug = $slugBase . '-' . $counter++;
                 }
+            } else {
+                $slug = $product->slug; // Preserve existing slug
             }
 
             // If new images are uploaded, replace the old ones
@@ -243,7 +250,13 @@ class ProductController extends Controller
                         $imageUrls[] = asset('storage/' . $path);
                     }
                 } catch (\Exception $e) {
-                    return response()->json(['message' => 'Failed to upload one or more images.'], 500);
+                    Log::error('Failed to upload images: ' . $e->getMessage());
+
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Failed to upload one or more images.',
+                        'errors' => ['product_images' => ['Failed to upload images.']]
+                    ], 500);
                 }
             }
 
@@ -263,20 +276,33 @@ class ProductController extends Controller
                 'is_active' => $validatedData['is_active'] ?? $product->is_active, // Preserve existing if not updated
             ]);
 
-
             // Return the updated product
             return response()->json([
+                'status' => true,
                 'message' => "{$product->product_name} updated successfully",
                 'productData' => $product->load('category')
             ], 200);
         } catch (ValidationException $e) {
-            // Return validation errors as JSON e.g. { "message": "Validation failed", "errors": { "product_name": ["The product name field is required."] } }
+            // Return validation errors as JSON
             return response()->json([
+                'status' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'error' => $e->errors()
             ], 422);
+        } catch (ModelNotFoundException $e) {
+            // Handle product not found
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found',
+                'error' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            // Return a generic error message
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update product due to an error in the server',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
