@@ -26,7 +26,6 @@ class ProductController extends Controller
 
             // Return the products
             return response()->json([
-                'success' => true,
                 'message' => 'Products retrieved successfully',
                 'products' => $products->toArray()
             ], 200);
@@ -35,8 +34,8 @@ class ProductController extends Controller
             Log::error('Error fetching products: ' . $e->getMessage());
 
             return response()->json([
-                'success' => false,
                 'message' => 'Something went wrong while fetching products. Please try again later.',
+                'developerMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -68,9 +67,12 @@ class ProductController extends Controller
             // }
 
             // Prepend full URL to images
-            $product->images = array_map(function ($image) {
-                return asset('storage/' . ltrim($image, '/')); // Ensure path consistency
-            }, $images);
+            // $product->images = array_map(function ($image) {
+            //     return asset('storage/' . ltrim($image, '/')); // Ensure path consistency
+            // }, $images);
+
+            // Get the category of the product
+            $product->category_id = Category::findOrFail($product->category_id);
 
             // Return the product with images
             return response()->json([
@@ -559,10 +561,13 @@ class ProductController extends Controller
                 return asset('storage/' . $image);
             }, $product->images) : [];
 
+            // Get the category of the product
+            $product->category_id = Category::findOrFail($product->category_id);
+
             // Return the product
             return response()->json([
                 'message' => 'Product found',
-                'product' => $product
+                'product' => $product,
             ], 200);
         } catch (QueryException $e) {
             return response()->json([
