@@ -306,7 +306,7 @@ class ProductController extends Controller
         }
     }
 
-    // Delete a product by id
+    // Soft delete a product by id
     public function deleteProductById(String $id): JsonResponse
     {
         try {
@@ -354,6 +354,30 @@ class ProductController extends Controller
         }
     }
 
+    // Get all deleted products (soft deleted)
+    public function getDeletedProducts(): JsonResponse
+    {
+        try {
+            // Get all soft-deleted products
+            $products = Product::onlyTrashed()->get();
+
+            // Check if any products were found, if not, return an empty array
+            if ($products->isEmpty()) {
+                return response()->json([], 200);
+            }
+
+            // Return the products
+            return response()->json(
+                [
+                    'message' => 'Deleted products retrieved successfully',
+                    'products' => $products
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
 
     // Search for products by name
     public function searchProductsByName(String $productName): JsonResponse
