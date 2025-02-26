@@ -48,8 +48,11 @@ class ProductController extends Controller
             // Attempt to find product or throw 404
             $product = Product::findOrFail($id);
 
-            // Ensure images are an array before modifying them
+            // Ensure images are an array before attempting to map over them
             $images = is_array($product->images) ? $product->images : [];
+
+            // Increment the view count
+            $product->increment('product_view');
 
             // // Check if the product has images
             // if ($product->images) {
@@ -71,22 +74,21 @@ class ProductController extends Controller
 
             // Return the product with images
             return response()->json([
-                'success' => true,
                 'message' => 'Product found',
                 'product' => $product
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Product not found'
+                'userMessage' => 'Product not found',
+                'developerMessage' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
             // Log the actual error for debugging
             Log::error('Error fetching product: ' . $e->getMessage());
 
             return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong while retrieving the product.'
+                'userMessage' => 'Something went wrong while retrieving the product.',
+                'developerMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -535,7 +537,6 @@ class ProductController extends Controller
     }
 
     // Search for products by slug
-    // Search for a product by slug and increment view count
     public function searchProductsBySlug($slug): JsonResponse
     {
         try {
