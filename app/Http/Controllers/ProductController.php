@@ -379,7 +379,7 @@ class ProductController extends Controller
         }
     }
 
-    // Search for products by name
+    // Search for products by name (case-insensitive for search bar)
     public function searchProductsByName(String $productName): JsonResponse
     {
         try {
@@ -535,39 +535,47 @@ class ProductController extends Controller
     }
 
     // Search for products by slug
+    // Search for a product by slug and increment view count
     public function searchProductsBySlug($slug): JsonResponse
     {
         try {
-            // Search for products where the slug is equal to the search term
-            $products = Product::where('slug', $slug)->get(); // get all products that match the search term
+            // Find a single product by slug
+            $product = Product::where('slug', $slug)->first();
 
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
+            // If product was not found, return a 404 response
+            if (!$product) {
+                return response()->json([
+                    'userMessage' => "Product not found",
+                    'developerMessage' => 'No product found with the given slug'
+                ], 404);
             }
 
-            // Transform the products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
+            // Increment view count
+            $product->increment('product_view');
 
-                // Return the product
-                return $product;
-            });
+            // Check if the product has images and prepend the full URL
+            $product->images = $product->images ? array_map(function ($image) {
+                return asset('storage/' . $image);
+            }, $product->images) : [];
 
-            // Return the products
-            return response()->json($productsWithImages, 200);
-        } catch (ModelNotFoundException) {
-            return response()->json(['message' => 'No products found'], 404);
+            // Return the product
+            return response()->json([
+                'message' => 'Product found',
+                'product' => $product
+            ], 200);
         } catch (QueryException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to search for the product',
+                'developerMessage' => $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => "Failed to search for the product",
+                'developerMessage' => $e->getMessage()
+            ], 500);
         }
     }
+
 
     // Toggle the status of a product by id
     public function toggleProductStatusById(String $id): JsonResponse
