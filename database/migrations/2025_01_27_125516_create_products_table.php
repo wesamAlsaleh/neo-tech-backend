@@ -13,16 +13,20 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('product_name');
-            $table->text('product_description');
+            $table->string('product_name')->index();
+            $table->text('product_description')->nullable();
             $table->decimal('product_price', 8, 2);
-            $table->integer('product_rating')->default(0);
-            $table->string('slug')->unique();
+            $table->decimal('product_rating', 3, 2)->default(0); // 0.00 to 5.00
+            $table->unsignedInteger('product_stock')->default(0);
+            $table->unsignedInteger('product_sold')->default(0);
+            $table->unsignedInteger('product_view')->default(0);
+            $table->string('product_barcode')->unique()->index(); // unique barcode
+            $table->string('slug')->unique()->index();
             $table->json('images');
             $table->boolean('is_active')->default(false);
-            $table->boolean('in_stock')->default(false);
             $table->foreignId('category_id')->constrained('categories');
             $table->timestamps();
+            $table->softDeletes(); // Allows soft deleting
         });
     }
 

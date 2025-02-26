@@ -12,7 +12,6 @@ use Illuminate\Validation\ValidationException;
 
 class CategoryController extends Controller
 {
-    // TODO: Remove Error Messages from the response due to security reasons in production
 
     // Store category in database
     public function createCategory(Request $request)

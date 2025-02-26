@@ -72,7 +72,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good"
     Route::post('/admin/update-product/{id}', [ProductController::class, 'updateProductById']); // update a product by id "Good"
-    Route::delete('/admin/delete-product/{id}', [ProductController::class, 'deleteProductById']); // delete a product by id "Good"
+    Route::delete('/admin/delete-product/{id}', [ProductController::class, 'deleteProductById']); // soft delete a product by id "Good"
+    Route::put('/admin/products/restore/{id}', [ProductController::class, 'restoreProductById']); // restore a soft deleted product by id "Good"
+    Route::get('/admin/products/trashed', [ProductController::class, 'getDeletedProducts']); // get all trashed products "Good"
     Route::patch('/admin/toggle-product-status/{id}', [ProductController::class, 'toggleProductStatusById']); // toggle product status by id "Good"
     Route::patch('/admin/toggle-product-availability/{id}', [ProductController::class, 'toggleProductAvailabilityById']); // toggle product availability by id "Good"
 });

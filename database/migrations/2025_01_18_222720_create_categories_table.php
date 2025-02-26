@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('category_image')->nullable();
             $table->boolean('is_active')->default(false);
             $table->timestamps();
+            $table->softDeletes(); // Allows soft deleting
         });
     }
 
