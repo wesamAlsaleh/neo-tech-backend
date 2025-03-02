@@ -557,9 +557,9 @@ class ProductController extends Controller
             $product->increment('product_view');
 
             // Check if the product has images and prepend the full URL
-            $product->images = $product->images ? array_map(function ($image) {
-                return asset('storage/' . $image);
-            }, $product->images) : [];
+            // $product->images = $product->images ? array_map(function ($image) {
+            //     return asset('storage/' . $image);
+            // }, $product->images) : [];
 
             // Get the category of the product
             $product->category_id = Category::findOrFail($product->category_id);
