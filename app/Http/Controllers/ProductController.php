@@ -24,6 +24,14 @@ class ProductController extends Controller
             // Get all products
             $products = Product::paginate(10); // get all products with pagination (10 products per page)
 
+            // If no products were found, return an empty array
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => []
+                ], 200);
+            }
+
             // Return the products
             return response()->json([
                 'message' => 'Products retrieved successfully',
