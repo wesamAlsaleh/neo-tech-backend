@@ -12,4 +12,10 @@ class Category extends Model
         'category_description',
         'category_image'
     ];
+
+    // Each category has many products
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }

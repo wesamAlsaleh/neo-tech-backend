@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\HomePageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Product;
@@ -46,15 +47,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 
-/**
-|--------------------------------------------------------------------------
-|   C routes that are not protected by sanctum middleware
-|--------------------------------------------------------------------------
- */
 // Client routes for getting categories
 Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
 Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
 
+/**
+|----------------------------------------------------------------------------------------
+|   C routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
+|----------------------------------------------------------------------------------------
+ */
 // Admin routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated] and EnsureUserIsAdmin middleware [require the user to be an admin]
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     // Create/Update/Delete Category routes
@@ -65,9 +66,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 });
 
 /**
-|--------------------------------------------------------------------------
-|   Products routes that are not protected by sanctum middleware and EnsureUserIsAdmin middleware
-|--------------------------------------------------------------------------
+|----------------------------------------------------------------------------------------------
+|   Products routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
+|----------------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good"
@@ -89,3 +90,11 @@ Route::get('/products-by-slug/{slug}', [ProductController::class, 'searchProduct
 Route::get('/products-by-price/{min_price}/{max_price}', [ProductController::class, 'searchProductsByPriceRange']); // get all products by price "I think it is good"
 Route::get('/products-by-availability/{availability}', [ProductController::class, 'searchProductsByAvailability']); // get all products by availability "Good"
 Route::get('/products-by-status/{status}', [ProductController::class, 'searchProductsByStatus']); // get all products by status "Good"
+
+
+/**
+|----------------------------------------------------------------------------------------------
+|   Home page routes that are  protected by sanctum middleware and EnsureUserIsAdmin middleware
+|----------------------------------------------------------------------------------------------
+ */
+Route::get('/home-page-data', [HomePageController::class, 'getHomePageProducts']); // get home page products ""
