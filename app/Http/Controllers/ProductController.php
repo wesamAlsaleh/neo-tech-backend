@@ -615,50 +615,20 @@ class ProductController extends Controller
         }
     }
 
-    // Get best selling products
-    public function getTopBestSellingProducts(): JsonResponse
-    {
-        try {
-            // Get the the top 4 best selling products and the rest let the user explore
-            $products = Product::orderBy('product_sold', 'desc')->take(4)->get();
-
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
-            }
-
-            // Return the products
-            return response()->json([
-                'message' => 'Best selling products retrieved successfully',
-                'products' => $products
-            ], 200);
-        } catch (ModelNotFoundException) {
-            return response()->json([
-                'message' => 'No products found',
-                'developerMessage' => ''
-            ], 404);
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => 'Failed to fetch best selling products',
-                'developerMessage' => $e->getMessage()
-            ], 500);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to fetch best selling products',
-                'developerMessage' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // Get all best selling products with pagination
     public function getBestSellingProducts(Request $request): JsonResponse
     {
         try {
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
             // Get the page number from the request eg. /best-selling-products?page=1
             $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
 
             // Get the best selling products with pagination based on the page number
-            $products = Product::orderBy('product_sold', 'desc')->paginate(4);
+            $products = Product::orderBy('product_sold', 'desc')->paginate(8);
 
             // Check if products were found
             if ($products->isEmpty()) {
@@ -695,8 +665,6 @@ class ProductController extends Controller
             ], 500);
         }
     }
-
-
 
     // Get latest products
     public function getLatestProducts(): JsonResponse
