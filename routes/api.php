@@ -90,11 +90,6 @@ Route::get('/products-by-slug/{slug}', [ProductController::class, 'searchProduct
 Route::get('/products-by-price/{min_price}/{max_price}', [ProductController::class, 'searchProductsByPriceRange']); // get all products by price "I think it is good"
 Route::get('/products-by-availability/{availability}', [ProductController::class, 'searchProductsByAvailability']); // get all products by availability "Good"
 Route::get('/products-by-status/{status}', [ProductController::class, 'searchProductsByStatus']); // get all products by status "Good"
-
-
-/**
-|----------------------------------------------------------------------------------------------
-|   Home page routes that are  protected by sanctum middleware and EnsureUserIsAdmin middleware
-|----------------------------------------------------------------------------------------------
- */
-Route::get('/home-page-data', [HomePageController::class, 'getHomePageProducts']); // get home page products ""
+Route::get('/best-selling-products', [ProductController::class, 'getBestSellingProducts']); // get best selling products "Good"
+Route::get('/latest-products', [ProductController::class, 'getLatestProducts']); // get latest products "Good"
+Route::get('/explore-products', [ProductController::class, 'getExploreProducts']); // get random products "Good"

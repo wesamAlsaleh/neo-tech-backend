@@ -510,7 +510,6 @@ class ProductController extends Controller
         }
     }
 
-
     // Search for products by status
     public function searchProductsByStatus(bool $status): JsonResponse
     {
@@ -590,7 +589,6 @@ class ProductController extends Controller
         }
     }
 
-
     // Toggle the status of a product by id
     public function toggleProductStatusById(String $id): JsonResponse
     {
@@ -614,6 +612,111 @@ class ProductController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Get best selling products
+    public function getBestSellingProducts(): JsonResponse
+    {
+        try {
+            // Get the top 10 best selling products
+            $products = Product::orderBy('product_sold', 'desc')->take(10)->get();
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Best selling products retrieved successfully',
+                'products' => $products
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get latest products
+    public function getLatestProducts(): JsonResponse
+    {
+        try {
+            // Get the top 10 latest products
+            $products = Product::orderBy('created_at', 'desc')->take(10)->get();
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Latest products retrieved successfully',
+                'products' => $products
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch latest products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch latest products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get explore products (random products)
+    public function getExploreProducts(): JsonResponse
+    {
+        try {
+            // Get 10 random products
+            $products = Product::inRandomOrder()->take(10)->get();
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Explore products retrieved successfully',
+                'products' => $products
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch explore products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch explore products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
         }
     }
 }
