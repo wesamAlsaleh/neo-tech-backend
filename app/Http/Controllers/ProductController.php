@@ -616,11 +616,11 @@ class ProductController extends Controller
     }
 
     // Get best selling products
-    public function getBestSellingProducts(): JsonResponse
+    public function getTopBestSellingProducts(): JsonResponse
     {
         try {
-            // Get the top 10 best selling products
-            $products = Product::orderBy('product_sold', 'desc')->take(10)->get();
+            // Get the the top 4 best selling products and the rest let the user explore
+            $products = Product::orderBy('product_sold', 'desc')->take(4)->get();
 
             // Check if products were found
             if ($products->isEmpty()) {
@@ -649,6 +649,54 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    // Get all best selling products with pagination
+    public function getBestSellingProducts(Request $request): JsonResponse
+    {
+        try {
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get the best selling products with pagination based on the page number
+            $products = Product::orderBy('product_sold', 'desc')->paginate(4);
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => [],
+                ], 200);
+            }
+
+            // Return the products along with pagination info
+            return response()->json([
+                'message' => 'Best selling products retrieved successfully',
+                'products' => $products->items(),  // The current page products
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'total_pages' => $products->lastPage(),
+                    'total_items' => $products->total(),
+                ]
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 
     // Get latest products
     public function getLatestProducts(): JsonResponse
