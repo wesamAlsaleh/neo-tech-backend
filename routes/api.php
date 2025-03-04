@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HomePageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ShopFeatureController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -93,3 +94,15 @@ Route::get('/products-by-status/{status}', [ProductController::class, 'searchPro
 Route::get('/best-selling-products', [ProductController::class, 'getBestSellingProducts']); // get best selling products "Good"
 Route::get('/latest-products', [ProductController::class, 'getLatestProducts']); // get latest products "Good"
 Route::get('/explore-products', [ProductController::class, 'getExploreProducts']); // get random products "Good"
+
+/**
+|----------------------------------------------------------------------------------------------
+|   Shop Features API routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
+|----------------------------------------------------------------------------------------------
+ */
+Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
+    Route::get('/admin/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
+    Route::post('/admin/create-feature', [ShopFeatureController::class, 'store']); // create a new shop feature "Good"
+    Route::post('/admin/update-feature/{id}', [ShopFeatureController::class, 'update']); // update a shop feature by id "Good"
+    Route::delete('/admin/delete-feature/{id}', [ShopFeatureController::class, 'destroy']); // delete a shop feature by id "Good"
+});
