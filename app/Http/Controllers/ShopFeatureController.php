@@ -16,24 +16,41 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 class ShopFeatureController extends Controller
 {
-    // Get all shop features
-    public function index()
+    // Get all shop features (admin-side)
+    public function index(Request $request)
     {
         try {
-            $ShopFeatures = ShopFeature::all();
+            // validate the incoming request to get the page number
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request, or default to 1 if not provided
+            $request->query('page') ?? 1; // e.g. /api/shop-features?page=1
+
+            // Get all shop features from the database with pagination
+            $ShopFeatures = ShopFeature::paginate(5);
 
             // If there are no shop features, return an empty array
             if ($ShopFeatures->isEmpty()) {
                 return response()->json([
                     'message' => 'No shop features found',
                     'features' => [],
-                ]);
+                    'pagination' => [
+                        'current_page' => 1,
+                        'total_pages' => 1,
+                    ],
+                ], 200);
             }
 
             return response()->json([
                 'message' => 'Get all shop features',
-                'features' => $ShopFeatures->toArray(),
-            ]);
+                'features' => $ShopFeatures->items(),  // The current page items
+                'pagination' => [
+                    'current_page' => $ShopFeatures->currentPage(),
+                    'total_pages' => $ShopFeatures->lastPage(),
+                ],
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to get all shop features',
@@ -74,7 +91,7 @@ class ShopFeatureController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Shop feature added successfully',
+                'message' => "$ShopFeature->name added successfully",
                 'feature' => $ShopFeature->toArray(),
             ]);
         } catch (ValidationException $e) {
@@ -260,6 +277,33 @@ class ShopFeatureController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to toggle shop feature status',
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get active shop features (client-side)
+    public function getActiveFeatures()
+    {
+        try {
+            // Get all active shop features from the database (should be <= 3)
+            $activeFeatures = ShopFeature::where('is_active', true)->get();
+
+            // If there are no active shop features, return an empty array
+            if ($activeFeatures->isEmpty()) {
+                return response()->json([
+                    'message' => 'No active shop features found',
+                    'features' => [],
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Active shop features found',
+                'features' => $activeFeatures->toArray(),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to get active shop features',
                 'devMessage' => $e->getMessage()
             ], 500);
         }
