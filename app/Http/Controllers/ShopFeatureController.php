@@ -221,4 +221,47 @@ class ShopFeatureController extends Controller
             ], 500);
         }
     }
+
+    // Toggle the status of a shop feature
+    public function toggleFeatureStatusById(String $id)
+    {
+        try {
+            // Find the ShopFeature by ID
+            $shopFeature = ShopFeature::find($id);
+
+            // If the ShopFeature does not exist, return an error
+            if (!$shopFeature) {
+                return response()->json([
+                    'message' => 'Shop feature not found',
+                    'devMessage' => 'SHOP_FEATURE_NOT_FOUND'
+                ], 404);
+            }
+
+            // Get the current count of active features to prevent activating more than 3 features
+            $activeCount = ShopFeature::where('is_active', true)->count(); // 1 is true, 0 is false
+
+            // If trying to activate a feature and there are already 3 active features
+            if ($shopFeature->is_active == false && $activeCount >= 3) {
+                return response()->json([
+                    'message' => 'Cannot activate more than 3 features. Please deactivate one first.',
+                    'devMessage' => 'MAX_ACTIVE_FEATURES_REACHED'
+                ], 400);
+            }
+
+            // Toggle the status
+            $shopFeature->is_active = !$shopFeature->is_active;
+
+            // Save changes
+            $shopFeature->save();
+
+            return response()->json([
+                'message' => "$shopFeature->name is now " . ($shopFeature->is_active ? 'active' : 'not active'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to toggle shop feature status',
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

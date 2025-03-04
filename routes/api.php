@@ -105,4 +105,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/create-feature', [ShopFeatureController::class, 'store']); // create a new shop feature "Good"
     Route::post('/admin/update-feature/{id}', [ShopFeatureController::class, 'update']); // update a shop feature by id "Good"
     Route::delete('/admin/delete-feature/{id}', [ShopFeatureController::class, 'destroy']); // delete a shop feature by id "Good"
+    Route::patch('/admin/toggle-feature-status/{id}', [ShopFeatureController::class, 'toggleFeatureStatusById']); // toggle shop feature status by id "Good"
 });
+
+// Client routes for getting shop features
+Route::get('/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
