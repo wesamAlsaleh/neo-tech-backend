@@ -35,7 +35,7 @@ class ProductController extends Controller
             // Return the products
             return response()->json([
                 'message' => 'Products retrieved successfully',
-                'products' => $products->toArray()
+                'products' => $products->toArray() // Return the products as an array
             ], 200);
         } catch (\Exception $e) {
             // Log the actual error for debugging
@@ -701,22 +701,29 @@ class ProductController extends Controller
         }
     }
 
-    // Get explore products (random products)
-    public function getExploreProducts(): JsonResponse
+    // Get explore products (8 random products)
+    public function getExploreProducts(Request $request): JsonResponse
     {
         try {
-            // Get 10 random products
-            $products = Product::inRandomOrder()->take(10)->get();
+            // Get 18 random active products
+            $products = Product::where('is_active', true)
+                ->inRandomOrder()
+                ->limit(18)
+                ->get();
 
             // Check if products were found
             if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => []
+                ], 404);
             }
 
             // Return the products
             return response()->json([
                 'message' => 'Explore products retrieved successfully',
-                'products' => $products
+                'products' => $products,
+
             ], 200);
         } catch (ModelNotFoundException) {
             return response()->json([
