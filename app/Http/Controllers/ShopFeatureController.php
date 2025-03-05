@@ -96,7 +96,7 @@ class ShopFeatureController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
                 'devMessage' => $e->errors(),
             ], 422);
         } catch (FileException $e) {
@@ -174,12 +174,12 @@ class ShopFeatureController extends Controller
             $shopFeature->save();
 
             return response()->json([
-                'message' => 'Shop feature updated successfully',
+                'message' => "$shopFeature->name updated successfully",
                 'feature' => $shopFeature,
             ]);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'Validation failed',
+                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
                 'devMessage' => $e->errors(),
             ], 422);
         } catch (FileException $e) {
