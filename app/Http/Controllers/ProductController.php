@@ -648,11 +648,6 @@ class ProductController extends Controller
                     'total_items' => $products->total(),
                 ]
             ], 200);
-        } catch (ModelNotFoundException) {
-            return response()->json([
-                'message' => 'No products found',
-                'developerMessage' => ''
-            ], 404);
         } catch (QueryException $e) {
             return response()->json([
                 'message' => 'Failed to fetch best selling products',
