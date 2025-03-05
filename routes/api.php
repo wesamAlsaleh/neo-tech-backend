@@ -109,4 +109,4 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 });
 
 // Client routes for getting shop features
-Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get 3 active features ""
+Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get 3 active features "Good"

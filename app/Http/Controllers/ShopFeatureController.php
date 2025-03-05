@@ -79,8 +79,8 @@ class ShopFeatureController extends Controller
             $path = $request->icon->storeAs("images/shop_features_icons", $iconName, 'public');
 
             // Generate the public URL (accessible via the browser)
-            $url = asset(str_replace('public/', 'storage/', $path));
-
+            // $url = asset(str_replace('public/', 'storage/', $path));
+            $url = $url = url('storage/' . $path);
 
             // Add the ShopFeature to the database
             $ShopFeature = ShopFeature::create([
@@ -162,7 +162,7 @@ class ShopFeatureController extends Controller
                 $path = $request->icon->storeAs("images/shop_features_icons", $iconName, 'public');
 
                 // Update icon URL in the database
-                $shopFeature->icon = asset('storage/' . $path);
+                $shopFeature->icon = url('storage/' . $path);
             }
 
             // Update other fields if provided, or keep old values
@@ -282,7 +282,7 @@ class ShopFeatureController extends Controller
         }
     }
 
-    // Get active shop features (client-side)
+    // Get active shop features (only 3 can be active at a time for the client-side)
     public function getActiveFeatures()
     {
         try {
