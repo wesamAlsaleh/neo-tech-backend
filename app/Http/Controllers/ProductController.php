@@ -28,6 +28,7 @@ class ProductController extends Controller
             if ($products->isEmpty()) {
                 return response()->json([
                     'message' => 'No products found',
+                    'developerMessage' => 'No products found in the database',
                     'products' => []
                 ], 200);
             }
@@ -182,6 +183,11 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} created successfully",
                 'productData' => $product->load('category')
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json(
                 [
@@ -405,6 +411,22 @@ class ProductController extends Controller
                 'sale_end' => 'required|date|after:sale_start', // Sale end must be after start
             ]);
 
+            // If the product is already on sale, return an error
+            if ($product->onSale) {
+                return response()->json([
+                    'message' => "{$product->product_name} is already on sale",
+                    'saleDetails' => [
+                        'discount' => $product->discount, // The discount applied
+                        'sale_start' => $product->sale_start, // The sale start date
+                        'sale_end' => $product->sale_end, // The sale end date
+                        'sale_duration' => $product->sale_duration, // Automatically calculated by the helper
+                    ]
+                ], 400);
+            }
+
+            // Calculate the product price after discount
+            $product->product_price_after_discount = $product->product_price - ($product->product_price * ($validated['discount'] / 100));
+
             // Put the product on sale
             $product->update([
                 'onSale' => true,
@@ -414,7 +436,6 @@ class ProductController extends Controller
             ]);
 
             // Return the updated product
-            // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} is now on sale",
                 'saleDetails' => [
@@ -422,12 +443,11 @@ class ProductController extends Controller
                     'sale_start' => $validated['sale_start'], // The sale start date
                     'sale_end' => $validated['sale_end'], // The sale end date
                     'sale_duration' => $product->sale_duration, // Automatically calculated by the helper
-                    'sale_price' => $product->sale_price, // Automatically calculated by the helper
                 ]
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => $e->errors(),
+                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
                 'developerMessage' => $e->getMessage()
             ], 422);
         } catch (ModelNotFoundException $e) {

@@ -14,7 +14,7 @@ class Product extends Model
 
     protected $dates = ['deleted_at']; // Ensure deleted_at is treated as a date
 
-    protected $appends = ['sale_duration', 'product_price']; // This makes sale_duration available in JSON responses eg. $product->sale_duration; // Outputs the sale duration in days
+    protected $appends = ['sale_duration']; // This makes sale_duration available in JSON responses eg. $product->sale_duration; // Outputs the sale duration in days
 
     protected $fillable = [
         'product_name',
@@ -30,6 +30,7 @@ class Product extends Model
         'is_active',
         'category_id',
         'onSale',
+        'product_price_after_discount',
         'discount',
         'sale_start',
         'sale_end',
@@ -40,6 +41,7 @@ class Product extends Model
         'images' => 'array',
         'is_active' => 'boolean',
         'product_price' => 'decimal:2',
+        'product_price_after_discount' => 'decimal:2',
         'product_rating' => 'decimal:2',
         'product_stock' => 'integer',
         'product_sold' => 'integer',
@@ -75,14 +77,5 @@ class Product extends Model
          * "sale_duration": 5, // Sale duration in days
          * }
          */
-    }
-
-    // Get the product price after discount
-    public function getSalePriceAttribute()
-    {
-        if ($this->onSale && $this->discount > 0) {
-            return round($this->product_price * (1 - $this->discount / 100), 2);
-        }
-        return $this->product_price;
     }
 }
