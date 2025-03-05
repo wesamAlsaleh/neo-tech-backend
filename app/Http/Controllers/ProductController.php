@@ -391,6 +391,58 @@ class ProductController extends Controller
         }
     }
 
+    // Put a product on sale
+    public function putProductOnSale(String $id, Request $request): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Validate the request
+            $validated = $request->validate([
+                'discount' => 'required|numeric|min:0|max:100', // Ensure discount is between 0 and 100%
+                'sale_start' => 'required|date|after_or_equal:today', // Sale start must be today or later
+                'sale_end' => 'required|date|after:sale_start', // Sale end must be after start
+            ]);
+
+            // Put the product on sale
+            $product->update([
+                'onSale' => true,
+                'discount' => $validated['discount'],
+                'sale_start' => $validated['sale_start'],
+                'sale_end' => $validated['sale_end'],
+            ]);
+
+            // Return the updated product
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} is now on sale",
+                'saleDetails' => [
+                    'discount' => $validated['discount'], // The discount applied
+                    'sale_start' => $validated['sale_start'], // The sale start date
+                    'sale_end' => $validated['sale_end'], // The sale end date
+                    'sale_duration' => $product->sale_duration, // Automatically calculated by the helper
+                    'sale_price' => $product->sale_price, // Automatically calculated by the helper
+                ]
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => $e->errors(),
+                'developerMessage' => $e->getMessage()
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+                'developerMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to put product on sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Search for products by name (case-insensitive for search bar)
     public function searchProductsByName(String $productName): JsonResponse
     {

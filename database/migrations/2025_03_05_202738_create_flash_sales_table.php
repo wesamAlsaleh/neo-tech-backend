@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->index();
             $table->text('description')->nullable();
-            $table->unsignedInteger('flash_sale_duration')->default(24); // Duration = endDateTime - startDateTime
-            $table->timestamp('start_date')->nullable(); // Sale start date
-            $table->timestamp('end_date')->nullable(); // Sale end date
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
             $table->boolean('is_active')->default(false);
             $table->json('products'); // List of products on sale (product_id, discount)
             $table->timestamps();
