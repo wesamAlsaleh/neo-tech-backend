@@ -414,13 +414,8 @@ class ProductController extends Controller
             // If the product is already on sale, return an error
             if ($product->onSale) {
                 return response()->json([
-                    'message' => "{$product->product_name} is already on sale",
-                    'saleDetails' => [
-                        'discount' => $product->discount, // The discount applied
-                        'sale_start' => $product->sale_start, // The sale start date
-                        'sale_end' => $product->sale_end, // The sale end date
-                        'sale_duration' => $product->sale_duration, // Automatically calculated by the helper
-                    ]
+                    'message' => "{$product->product_name} is already on sale, the discount is {$product->discount}% and the sale ends on {$product->sale_end}",
+                    'developerMessage' => 'The product is already on sale',
                 ], 400);
             }
 
@@ -437,13 +432,7 @@ class ProductController extends Controller
 
             // Return the updated product
             return response()->json([
-                'message' => "{$product->product_name} is now on sale",
-                'saleDetails' => [
-                    'discount' => $validated['discount'], // The discount applied
-                    'sale_start' => $validated['sale_start'], // The sale start date
-                    'sale_end' => $validated['sale_end'], // The sale end date
-                    'sale_duration' => $product->sale_duration, // Automatically calculated by the helper
-                ]
+                'message' => "{$product->product_name} is now on sale, the discount is {$product->discount}% and the sale starts on {$product->sale_start} and the sale ends on {$product->sale_end}, the sale duration is {$product->sale_duration} days.",
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -458,6 +447,93 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => "Failed to put product on sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Remove a product from sale
+    public function removeProductFromSale(String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // If the product is not on sale, return an error
+            if (!$product->onSale) {
+                return response()->json([
+                    'message' => "{$product->product_name} is not on sale, hence cannot be removed from sale",
+                    'developerMessage' => 'PRODUCT_NOT_ON_SALE',
+                ], 400);
+            }
+
+            // Remove the product from sale
+            $product->update([
+                'onSale' => false,
+                'discount' => 0,
+                'sale_start' => null,
+                'sale_end' => null,
+                'product_price_after_discount' => 0,
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} is no longer on sale, the discount has been removed",
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+                'developerMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to remove product from sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get all products on sale with pagination
+    public function getProductsOnSale(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get all products on sale
+            $products = Product::where('onSale', true)->paginate(10); // get all products on sale with pagination (10 products per page)
+
+            // Check if any products were found
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products on sale',
+                    'products' => [],
+                    'pagination' => [
+                        'current_page' => 1,
+                        'total_pages' => 1,
+                        'total_products_onSale' => 0,
+                    ]
+                ], 200);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Products on sale retrieved successfully',
+                'products' => $products->items(), // Return only the products on the current page
+                'pagination' => [
+                    'current_page' => $products->currentPage(), // The current page number
+                    'total_pages' => $products->lastPage(), // The last page number
+                    'total_products_onSale' => $products->total(), // The total number of products on sale
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to fetch products on sale",
                 'developerMessage' => $e->getMessage()
             ], 500);
         }
