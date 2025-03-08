@@ -49,3 +49,11 @@ class CheckSaleEndDate extends Command
         return 0;
     }
 }
+
+
+// To test the command, run the following command in the terminal:
+// php artisan app:check-sale-end-date
+// This command will check if the sale end date has passed for any products and update the onSale attribute to false if necessary.
+
+// To list all available commands, run the following command:
+// php artisan list
