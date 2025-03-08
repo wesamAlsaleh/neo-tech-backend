@@ -415,7 +415,7 @@ class ProductController extends Controller
             if ($product->onSale) {
                 return response()->json([
                     'message' => "{$product->product_name} is already on sale, the discount is {$product->discount}% and the sale ends on {$product->sale_end}",
-                    'developerMessage' => 'The product is already on sale',
+                    'developerMessage' => 'PRODUCT_ALREADY_ON_SALE',
                 ], 400);
             }
 
@@ -436,7 +436,8 @@ class ProductController extends Controller
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                // 'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                'message' => 'Validation failed',
                 'developerMessage' => $e->getMessage()
             ], 422);
         } catch (ModelNotFoundException $e) {
