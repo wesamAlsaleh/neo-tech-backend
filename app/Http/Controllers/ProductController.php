@@ -776,7 +776,9 @@ class ProductController extends Controller
             $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
 
             // Get the best selling products with pagination based on the page number
-            $products = Product::orderBy('product_sold', 'desc')->paginate(8);
+            $products = Product::where('is_active', true)
+                ->orderBy('product_sold', 'desc')
+                ->paginate(8);
 
             // Check if products were found
             if ($products->isEmpty()) {
