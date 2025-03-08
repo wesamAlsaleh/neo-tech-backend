@@ -32,8 +32,8 @@ class FlashSaleController extends Controller
 
             // Check if the product is active and on sale
             foreach ($validated['products'] as $productId) {
-                // Find the product
-                $product = Product::find($productId);
+                // Find the product or throw an exception
+                $product = Product::findOrFail($productId);
 
                 // If the product is not active return an error
                 if (!$product->is_active) {
@@ -52,6 +52,22 @@ class FlashSaleController extends Controller
                 }
             }
 
+            // Check if the dates is in the past
+            if (Carbon::parse($validated['start_date'])->isPast() || Carbon::parse($validated['end_date'])->isPast()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'developerMessage' => 'DATE_IS_PAST'
+                ], 422);
+            }
+
+            // Check if the dates are the same
+            if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'developerMessage' => 'DATES_ARE_SAME'
+                ], 422);
+            }
+
             // Create the flash sale
             FlashSale::create([
                 'name' => $validated['name'],
@@ -63,17 +79,17 @@ class FlashSaleController extends Controller
 
             return response()->json([
                 'message' => 'Flash sale created',
-                'duration' => Carbon::parse($validated['start_date'])->diffInDays($validated['end_date'])
+                'duration' => 'Available for ' . Carbon::parse($validated['start_date'])->diffInDays($validated['end_date']) . ' days'
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'developerMessage' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Flash sale creation failed',
-                'error' => $e->getMessage()
+                'developerMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -82,5 +98,32 @@ class FlashSaleController extends Controller
     public function show(String $id)
     {
         return FlashSale::findOrFail($id);
+    }
+
+    // Delete a flash sale by ID
+    public function destroy(String $id)
+    {
+        $flashSale = FlashSale::findOrFail($id);
+        $flashSale->delete();
+
+        return response()->json([
+            'message' => 'Flash sale deleted'
+        ], 200);
+    }
+
+    // Toggle flash sale status by ID
+    public function toggleFlashSaleStatusById(String $id)
+    {
+        // Find the flash sale or throw an exception
+        $flashSale = FlashSale::findOrFail($id);
+
+        // Check if the
+
+        $flashSale->is_active = !$flashSale->is_active;
+        $flashSale->save();
+
+        return response()->json([
+            'message' => 'Flash sale status toggled'
+        ], 200);
     }
 }

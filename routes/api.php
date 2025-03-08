@@ -122,6 +122,6 @@ Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales ""
-    Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale ""
+    Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale "Good"
     Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id ""
 });
