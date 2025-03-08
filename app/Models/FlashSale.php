@@ -24,6 +24,12 @@ class FlashSale extends Model
         'end_date' => 'datetime',
     ];
 
+    // Flash sales can have many products (many-to-many relationship)
+    public function products()
+    {
+        return $this->belongsToMany(Product::class);
+    }
+
     // Get the sale duration of a flash sale
     public function getFlashSaleDurationAttribute()
     {

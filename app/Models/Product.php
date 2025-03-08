@@ -55,6 +55,12 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    // products can belong to flash sales (many-to-many relationship)
+    public function flashSales()
+    {
+        return $this->belongsToMany(FlashSale::class);
+    }
+
     // Get the sale duration of a product
     public function getSaleDurationAttribute()
     {

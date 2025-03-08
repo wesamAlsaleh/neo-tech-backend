@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('start_date')->nullable();
             $table->timestamp('end_date')->nullable();
             $table->boolean('is_active')->default(false);
-            $table->json('products'); // List of products on sale (product_id, discount)
+            $table->json('products'); // array of product IDs
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\HomePageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
@@ -113,3 +114,14 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
 // Client routes for getting shop features
 Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get 3 active features "Good"
+
+/**
+|----------------------------------------------------------------------------------------------
+|   Flash Sales API routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
+|----------------------------------------------------------------------------------------------
+ */
+Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
+    Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales ""
+    Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale ""
+    Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id ""
+});
