@@ -518,7 +518,7 @@ class ProductController extends Controller
             $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
 
             // Get all products on sale
-            $products = Product::where('onSale', true)->paginate(10); // get all products on sale with pagination (10 products per page)
+            $products = Product::where('onSale', true)->paginate(9); // get all products on sale with pagination (9 products per page)
 
             // Check if any products were found
             if ($products->isEmpty()) {
