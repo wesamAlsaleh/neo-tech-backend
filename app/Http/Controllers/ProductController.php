@@ -18,17 +18,24 @@ class ProductController extends Controller
 {
 
     // Get all products
-    public function getAllProducts(): JsonResponse
+    public function getAllProducts(Request $request): JsonResponse
     {
         try {
-            // Get all products
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get all products with pagination
             $products = Product::paginate(10); // get all products with pagination (10 products per page)
 
             // If no products were found, return an empty array
             if ($products->isEmpty()) {
                 return response()->json([
                     'message' => 'No products found',
-                    'developerMessage' => 'No products found in the database',
                     'products' => []
                 ], 200);
             }
@@ -36,7 +43,11 @@ class ProductController extends Controller
             // Return the products
             return response()->json([
                 'message' => 'Products retrieved successfully',
-                'products' => $products->toArray() // Return the products as an array
+                'products' => $products->items(), // Return only the products on the current page
+                'pagination' => [
+                    'current_page' => $products->currentPage(), // The current page number
+                    'total_pages' => $products->lastPage(), // The last page number
+                ]
             ], 200);
         } catch (\Exception $e) {
             // Log the actual error for debugging
