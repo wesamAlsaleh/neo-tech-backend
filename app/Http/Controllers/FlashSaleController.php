@@ -129,12 +129,22 @@ class FlashSaleController extends Controller
     // Delete a flash sale by ID
     public function destroy(String $id)
     {
-        $flashSale = FlashSale::findOrFail($id);
-        $flashSale->delete();
+        try {
+            // Find the flash sale or throw an exception
+            $flashSale = FlashSale::findOrFail($id);
 
-        return response()->json([
-            'message' => 'Flash sale deleted'
-        ], 200);
+            // Delete the flash sale
+            $flashSale->delete();
+
+            return response()->json([
+                'message' => "$flashSale->name flash sale deleted successfully"
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Flash sale deletion failed',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // Toggle flash sale status by ID
