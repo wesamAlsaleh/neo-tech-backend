@@ -103,9 +103,14 @@ class FlashSaleController extends Controller
                 'products' => $validated['products'],
             ]);
 
+            // Calculate the duration of the flash sale
+            $duration = Carbon::parse($validated['start_date'])->diffInDays($validated['end_date']);
+            $duration_format = $duration >= 1 ? 'days' : '(less than a day)';
+
+
             return response()->json([
-                'message' => 'Flash sale created',
-                'duration' => 'Available for ' . Carbon::parse($validated['start_date'])->diffInDays($validated['end_date']) . ' days'
+                'message' => "$validated[name] flash sale created successfully",
+                'duration' => 'Available for ' . $duration . " " . $duration_format
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -123,7 +128,23 @@ class FlashSaleController extends Controller
     // Get a single flash sale by ID
     public function show(String $id)
     {
-        return FlashSale::findOrFail($id);
+        try {
+            // Find the flash sale or throw an exception
+            $flashSale = FlashSale::findOrFail($id);
+
+            // Attach the products
+            $flashSale->products = Product::whereIn('id', $flashSale->products)->get();
+
+            return response()->json([
+                'message' => 'Flash sale retrieved',
+                'flashSale' => $flashSale
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Flash sale retrieval failed',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // Delete a flash sale by ID
@@ -142,6 +163,91 @@ class FlashSaleController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Flash sale deletion failed',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Update a flash sale by ID
+    public function update(Request $request, String $id)
+    {
+        try {
+            // Find the flash sale or throw an exception
+            $flashSale = FlashSale::findOrFail($id);
+
+            // Validate the request
+            $validated = $request->validate([
+                'name' => 'required|string',
+                'description' => 'nullable|string',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'products' => 'required|array', // Array of product IDs
+                'products.*' => 'required|integer|exists:products,id', // Each product ID must exist in the products table
+            ]);
+
+            // Check if the product is active and on sale
+            foreach ($validated['products'] as $productId) {
+                // Find the product or throw an exception
+                $product = Product::findOrFail($productId);
+
+                // If the product is not active return an error
+                if (!$product->is_active) {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'developerMessage' => "{$product->product_name} is not active"
+                    ], 422);
+                }
+
+                // If the product is not on sale return an error
+                if (!$product->onSale) {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'developerMessage' => "{$product->product_name} is not on sale"
+                    ], 422);
+                }
+            }
+
+            // Check if the dates is in the past
+            if (Carbon::parse($validated['start_date'])->isPast() || Carbon::parse($validated['end_date'])->isPast()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'developerMessage' => 'DATE_IS_PAST'
+                ], 422);
+            }
+
+            // Check if the dates are the same
+            if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'developerMessage' => 'DATES_ARE_SAME'
+                ], 422);
+            }
+
+            // Update the flash sale
+            $flashSale->update([
+                'name' => $validated['name'],
+                'description' => $validated['description'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'products' => $validated['products'],
+            ]);
+
+            // Calculate the duration of the flash sale
+            $duration = Carbon::parse($validated['start_date'])->diffInDays($validated['end_date']);
+            $duration_format = $duration >= 1 ? 'days' : '(less than a day)';
+
+            return response()->json([
+                'message' => "$validated[name] flash sale updated successfully",
+                'duration' => 'Available for ' . $duration . " " . $duration_format
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'developerMessage' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Flash sale update failed',
                 'developerMessage' => $e->getMessage()
             ], 500);
         }
