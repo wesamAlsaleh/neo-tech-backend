@@ -36,6 +36,7 @@ Schedule::call(function () {
             'discount' => 0,
             'sale_start' => null,
             'sale_end' => null,
+            'product_price_after_discount' => 0,
         ]);
 
         // Log::info('Product ID: ' . $product->id . ' updated successfully.');

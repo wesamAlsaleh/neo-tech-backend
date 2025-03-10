@@ -505,6 +505,44 @@ class ProductController extends Controller
         }
     }
 
+    // Remove all products from sale
+    public function removeAllProductsFromSale(): JsonResponse
+    {
+        try {
+            // Get all products on sale
+            $products = Product::where('onSale', true)->get();
+
+            // If no products are on sale, return an error
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products are currently on sale',
+                    'developerMessage' => 'NO_PRODUCTS_ON_SALE',
+                ], 400);
+            }
+
+            // Remove all products from sale
+            $products->each(function ($product) {
+                $product->update([
+                    'onSale' => false,
+                    'discount' => 0,
+                    'sale_start' => null,
+                    'sale_end' => null,
+                    'product_price_after_discount' => 0,
+                ]);
+            });
+
+            // Return a success message
+            return response()->json([
+                'message' => 'All products have been removed from sale',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to remove all products from sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Get all products on sale with pagination
     public function getProductsOnSale(Request $request): JsonResponse
     {

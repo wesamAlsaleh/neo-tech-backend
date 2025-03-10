@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/toggle-product-sale/{id}', [ProductController::class, 'putProductOnSale']); // put a product on sale by id "Good"
     Route::post('/admin/toggle-product-sale-off/{id}', [ProductController::class, 'removeProductFromSale']); // put a product off sale by id "Good"
     Route::get('/admin/sale-products', [ProductController::class, 'getProductsOnSale']); // get all products "Good"
+    Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale ""
 });
 
 // Client routes for getting categories
