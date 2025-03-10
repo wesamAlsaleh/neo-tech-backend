@@ -114,7 +114,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 });
 
 // Client routes for getting shop features
-Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get 3 active features "Good"
+Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get the 3 active features "Good"
 
 /**
 |----------------------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures
 |----------------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales ""
+    Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales "Good"
     Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale "Good"
     Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id ""
 });

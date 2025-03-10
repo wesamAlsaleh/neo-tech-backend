@@ -10,34 +10,29 @@ use Illuminate\Validation\ValidationException;
 
 class FlashSaleController extends Controller
 {
-    // Get all flash sales in the database with their products and paginate the results
-    public function index(Request $request)
+    // Get all flash sales
+    public function index()
     {
         try {
-            // Validate the request
-            $request->validate([
-                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
-            ]);
+            // Fetch all flash sales with their products (products is a JSON array of product IDs) (max 5 flash sales in the shop!)
+            $flashSales = FlashSale::orderBy('created_at', 'desc')->get();
 
-            // Get the page number from the request eg. /best-selling-products?page=1
-            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
-
-            // Fetch all flash sales with their products (products is a JSON array of product IDs)
-            $flashSales = FlashSale::orderBy('created_at', 'desc')->paginate(8);
+            // If there are no flash sales return an empty array
+            if ($flashSales->isEmpty()) {
+                return response()->json([
+                    'message' => 'No flash sales found',
+                    'flashSales' => []
+                ], 200);
+            }
 
             // Loop through the flash sales and attach the products
             foreach ($flashSales as $flashSale) {
                 $flashSale->products = Product::whereIn('id', $flashSale->products)->get();
             }
 
-
             return response()->json([
                 'message' => 'Flash sales retrieved',
                 'flashSales' => $flashSales,
-                'pagination' => [
-                    'current_page' => $flashSales->currentPage(),
-                    'total_pages' => $flashSales->lastPage()
-                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
