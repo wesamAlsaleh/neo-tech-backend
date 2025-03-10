@@ -26,14 +26,16 @@ class CheckSaleEndDate extends Command
      */
     public function handle()
     {
-        // Get all sales where the end date has passed and onSale is still true
-        $products = Product::where('sale_end', '<', now())
-            ->where('onSale', true)
+        // Get the current date and time
+        $now = now();
+
+        // Get all products where onSale is true and sale_end has passed
+        $products = Product::where('onSale', true)
+            ->where('sale_end', '<', $now) // Add this condition to check if sale_end has passed
             ->get();
 
-        // Update onSale attribute to false for each sale
+        // Update onSale attribute to false for each product where sale_end has passed
         foreach ($products as $product) {
-            // Update the product after the sale end date has passed
             $product->update([
                 'onSale' => false,
                 'discount' => 0,
