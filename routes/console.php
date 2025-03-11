@@ -3,7 +3,6 @@
 use App\Models\Product;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-
 use Illuminate\Support\Facades\Log;
 
 // `php artisan schedule:list`to list all scheduled commands
@@ -44,4 +43,7 @@ Schedule::call(function () {
 
     // Log completion message
     // Log::info('Sale end date check completed.');
-})->everyMinute(); // Run this function every minute
+})->everyMinute();
+
+// Call the command to activate the flash sale
+Schedule::command('app:activate-flash-sale')->hourly();

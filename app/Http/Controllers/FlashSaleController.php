@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
+
 class FlashSaleController extends Controller
 {
     // Get all flash sales
