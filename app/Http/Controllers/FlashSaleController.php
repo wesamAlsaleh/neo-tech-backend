@@ -52,9 +52,17 @@ class FlashSaleController extends Controller
                 'description' => 'nullable|string',
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
-                'products' => 'required|array', // Array of product IDs
+                'products' => 'array', // Array of product IDs
                 'products.*' => 'required|integer|exists:products,id', // Each product ID must exist in the products table
             ]);
+
+            // If there are no products in the flash sale return a message
+            if (empty($validated['products'])) {
+                return response()->json([
+                    'message' => 'Flash sale must have at least one product',
+                    'developerMessage' => 'NO_PRODUCTS'
+                ], 422);
+            }
 
             // Check if the product is active and on sale
             foreach ($validated['products'] as $productId) {
@@ -64,16 +72,16 @@ class FlashSaleController extends Controller
                 // If the product is not active return an error
                 if (!$product->is_active) {
                     return response()->json([
-                        'message' => 'Validation failed',
-                        'developerMessage' => "{$product->product_name} is not active"
+                        'message' =>  "{$product->product_name} is not active",
+                        'developerMessage' => "{$product->product_name}_NOT_ACTIVE"
                     ], 422);
                 }
 
                 // If the product is not on sale return an error
                 if (!$product->onSale) {
                     return response()->json([
-                        'message' => 'Validation failed',
-                        'developerMessage' => "{$product->product_name} is not on sale"
+                        'message' => "{$product->product_name} is not on sale",
+                        'developerMessage' => "{$product->product_name}_NOT_ON_SALE"
                     ], 422);
                 }
             }
@@ -81,7 +89,7 @@ class FlashSaleController extends Controller
             // Check if the dates is in the past
             if (Carbon::parse($validated['start_date'])->isPast() || Carbon::parse($validated['end_date'])->isPast()) {
                 return response()->json([
-                    'message' => 'Validation failed',
+                    'message' => 'The start and end dates must be in the future',
                     'developerMessage' => 'DATE_IS_PAST'
                 ], 422);
             }
@@ -89,9 +97,14 @@ class FlashSaleController extends Controller
             // Check if the dates are the same
             if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
                 return response()->json([
-                    'message' => 'Validation failed',
+                    'message' => 'The start and end dates cannot be the same',
                     'developerMessage' => 'DATES_ARE_SAME'
                 ], 422);
+            }
+
+            // If the description is empty, set null
+            if (empty($validated['description'])) {
+                $validated['description'] = null;
             }
 
             // Create the flash sale
@@ -193,16 +206,16 @@ class FlashSaleController extends Controller
                 // If the product is not active return an error
                 if (!$product->is_active) {
                     return response()->json([
-                        'message' => 'Validation failed',
-                        'developerMessage' => "{$product->product_name} is not active"
+                        'message' => "{$product->product_name} is not active, please activate the product or remove it from the flash sale",
+                        'developerMessage' => "{$product->product_name}_NOT_ACTIVE"
                     ], 422);
                 }
 
                 // If the product is not on sale return an error
                 if (!$product->onSale) {
                     return response()->json([
-                        'message' => 'Validation failed',
-                        'developerMessage' => "{$product->product_name} is not on sale"
+                        'message' => "{$product->product_name} is not on sale, please put the product on sale or remove it from the flash sale",
+                        'developerMessage' => "{$product->product_name}_NOT_ON_SALE"
                     ], 422);
                 }
             }
@@ -210,7 +223,7 @@ class FlashSaleController extends Controller
             // Check if the dates is in the past
             if (Carbon::parse($validated['start_date'])->isPast() || Carbon::parse($validated['end_date'])->isPast()) {
                 return response()->json([
-                    'message' => 'Validation failed',
+                    'message' => "Please select a future date for the flash sale",
                     'developerMessage' => 'DATE_IS_PAST'
                 ], 422);
             }
@@ -218,7 +231,7 @@ class FlashSaleController extends Controller
             // Check if the dates are the same
             if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
                 return response()->json([
-                    'message' => 'Validation failed',
+                    'message' => 'Please select different dates/times for the flash sale',
                     'developerMessage' => 'DATES_ARE_SAME'
                 ], 422);
             }
@@ -251,21 +264,5 @@ class FlashSaleController extends Controller
                 'developerMessage' => $e->getMessage()
             ], 500);
         }
-    }
-
-    // Toggle flash sale status by ID
-    public function toggleFlashSaleStatusById(String $id)
-    {
-        // Find the flash sale or throw an exception
-        $flashSale = FlashSale::findOrFail($id);
-
-        // Check if the
-
-        $flashSale->is_active = !$flashSale->is_active;
-        $flashSale->save();
-
-        return response()->json([
-            'message' => 'Flash sale status toggled'
-        ], 200);
     }
 }
