@@ -418,8 +418,8 @@ class ProductController extends Controller
             // Validate the request
             $validated = $request->validate([
                 'discount' => 'required|numeric|min:0|max:100', // Ensure discount is between 0 and 100%
-                'sale_start' => 'required|date|after_or_equal:today', // Sale start must be today or later
-                'sale_end' => 'required|date|after:sale_start', // Sale end must be after start
+                'sale_end' => 'required|date|after:today', // Ensure the sale end date is in the future
+
             ]);
 
             // If the product is already on sale, return an error
@@ -437,7 +437,7 @@ class ProductController extends Controller
             $product->update([
                 'onSale' => true,
                 'discount' => $validated['discount'],
-                'sale_start' => $validated['sale_start'],
+                'sale_start' => now(), // Sale starts immediately
                 'sale_end' => $validated['sale_end'],
             ]);
 
