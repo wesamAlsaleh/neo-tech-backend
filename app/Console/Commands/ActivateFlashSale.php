@@ -30,28 +30,28 @@ class ActivateFlashSale extends Command
         // Get the current date and time
         $now = now();
 
-        // Deactivate expired flash sales
-        FlashSale::where('end_date', '<=', $now)
-            ->where('is_active', true)
-            ->update(['is_active' => false]);
+        // Get all flash sales
+        $flashSales = FlashSale::all();
 
-        // Deactivate all active flash sales (only one should be active at a time)
-        FlashSale::where('is_active', true)
-            ->update(['is_active' => false]);
+        // Loop through all flash sales and activate the one that is within its start and end dates
+        foreach ($flashSales as $flashSale) {
+            // Check if the current time is within the start and end dates of the flash sale
+            if ($now->between($flashSale->start_date, $flashSale->end_date)) {
+                // Active the flash sale that its time
+                $flashSale->update(['is_active' => true]);
 
-        // Activate the flash sale that should be active now
-        $flashSaleToActivate = FlashSale::where('start_date', '<=', $now)
-            ->where('end_date', '>', $now)
-            ->orderBy('start_date', 'asc') // Prioritize the earliest starting flash sale
-            ->first();
+                // Log that the flash sale has been activated
+                Log::info("Flash sale with ID {$flashSale->name} has been activated.");
 
-        if ($flashSaleToActivate) {
-            $flashSaleToActivate->update(['is_active' => true]);
+                // No need to check other flash sales
+                break;
+            } else {
+                // If not within the start and end dates, deactivate the flash sale
+                $flashSale->update(['is_active' => false]);
 
-            // Log the activation of the flash sale
-            Log::info('Flash sale activated: ' . $flashSaleToActivate->name);
+                // Log that the flash sale has been deactivated
+                Log::info("Flash sale with ID {$flashSale->id} has been deactivated.");
+            }
         }
-
-        $this->info('Flash sale activation check completed.');
     }
 }

@@ -95,6 +95,14 @@ class FlashSaleController extends Controller
                 ], 422);
             }
 
+            // Check if the end date is before the start date
+            if (Carbon::parse($validated['end_date'])->isBefore($validated['start_date'])) {
+                return response()->json([
+                    'message' => 'The end date must be after the start date',
+                    'developerMessage' => 'END_DATE_BEFORE_START_DATE'
+                ], 422);
+            }
+
             // Check if the dates are the same
             if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
                 return response()->json([
@@ -106,6 +114,19 @@ class FlashSaleController extends Controller
             // If the description is empty, set null
             if (empty($validated['description'])) {
                 $validated['description'] = null;
+            }
+
+            // Loop through all flash sales and check if the new flash sale dates overlap with any existing flash sale, TO_PREVENT OVERLAPPING FLASH SALES
+            $flashSales = FlashSale::all();
+
+            foreach ($flashSales as $flashSale) {
+                // If the new flash sale start date is between the start and end date of an existing flash sale return an error
+                if (Carbon::parse($validated['start_date'])->between($flashSale->start_date, $flashSale->end_date)) {
+                    return response()->json([
+                        'message' => "The start date overlaps with an existing flash sale ({$flashSale->name}, )",
+                        'developerMessage' => 'START_DATE_OVERLAP'
+                    ], 422);
+                }
             }
 
             // Create the flash sale
