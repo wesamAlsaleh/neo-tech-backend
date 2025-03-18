@@ -123,7 +123,7 @@ class FlashSaleController extends Controller
                 // If the new flash sale start date is between the start and end date of an existing flash sale return an error
                 if (Carbon::parse($validated['start_date'])->between($flashSale->start_date, $flashSale->end_date)) {
                     return response()->json([
-                        'message' => "The start date overlaps with an existing flash sale ({$flashSale->name}, )",
+                        'message' => "The start date overlaps with an existing flash sale (Check {$flashSale->name} Details)",
                         'developerMessage' => 'START_DATE_OVERLAP'
                     ], 422);
                 }
