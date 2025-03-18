@@ -29,26 +29,34 @@ class CheckSaleEndDate extends Command
         // Get the current date and time
         $now = now();
 
+        // Log the current time for debugging
+        // Log::info('Running sale end date check at: ' . $now);
+
         // Get all products where onSale is true and sale_end has passed
         $products = Product::where('onSale', true)
-            ->where('sale_end', '<', $now) // Add this condition to check if sale_end has passed
+            ->where('sale_end', '<', $now)
             ->get();
+
+        // Log the number of products found for debugging
+        // Log::info('Number of products to update: ' . $products->count());
 
         // Update onSale attribute to false for each product where sale_end has passed
         foreach ($products as $product) {
+            // Log::info('Updating product ID: ' . $product->id . ' - Sale end: ' . $product->sale_end);
+
             $product->update([
                 'onSale' => false,
                 'discount' => 0,
                 'sale_start' => null,
                 'sale_end' => null,
+                'product_price_after_discount' => 0,
             ]);
+
+            // Log::info('Product ID: ' . $product->id . ' updated successfully.');
         }
 
-        // Output success message
-        $this->info('Sale end dates checked and updated successfully.');
-
-        // Return 0 to indicate success
-        return 0;
+        // Log completion message
+        // Log::info('Sale end date check completed.');
     }
 }
 

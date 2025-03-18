@@ -229,13 +229,14 @@ class FlashSaleController extends Controller
                 ], 422);
             }
 
-            // Check if the dates are the same
+            // Check if the dates are the same exact date and time
             if (Carbon::parse($validated['start_date'])->isSameDay(Carbon::parse($validated['end_date']))) {
                 return response()->json([
-                    'message' => 'Please select different dates/times for the flash sale',
+                    'message' => 'The start and end dates cannot be the same',
                     'developerMessage' => 'DATES_ARE_SAME'
                 ], 422);
             }
+
 
             // Update the flash sale
             $flashSale->update([
