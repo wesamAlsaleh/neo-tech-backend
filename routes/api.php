@@ -125,6 +125,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales "Good"
     Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale "Good"
     Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id "Good"
-    Route::post('/admin/update-flash-sale/{id}', [FlashSaleController::class, 'update']); // update a flash sale by id ""
+    Route::post('/admin/update-flash-sale/{id}', [FlashSaleController::class, 'update']); // update a flash sale by id "Good"
     Route::delete('/admin/delete-flash-sale/{id}', [FlashSaleController::class, 'destroy']); // delete a flash sale by id "Good"
 });
+
+Route::get('/admin/display-active-flash-sale', [FlashSaleController::class, 'display']); // get the active flash sale ""

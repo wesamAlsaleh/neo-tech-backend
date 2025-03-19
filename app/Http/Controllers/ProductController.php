@@ -419,7 +419,6 @@ class ProductController extends Controller
             $validated = $request->validate([
                 'discount' => 'required|numeric|min:0|max:100', // Ensure discount is between 0 and 100%
                 'sale_end' => 'required|date|after:today', // Ensure the sale end date is in the future
-
             ]);
 
             // If the product is already on sale, return an error

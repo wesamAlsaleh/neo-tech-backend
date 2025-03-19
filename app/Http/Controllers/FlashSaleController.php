@@ -6,6 +6,7 @@ use App\Models\FlashSale;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 
@@ -111,9 +112,9 @@ class FlashSaleController extends Controller
                 ], 422);
             }
 
-            // If the description is empty, set null
+            // If the description is empty, set description to the name + default message
             if (empty($validated['description'])) {
-                $validated['description'] = null;
+                $validated['description'] = "Today's Flash Sale";
             }
 
             // Loop through all flash sales and check if the new flash sale dates overlap with any existing flash sale, TO_PREVENT OVERLAPPING FLASH SALES
@@ -160,7 +161,7 @@ class FlashSaleController extends Controller
         }
     }
 
-    // Get a single flash sale by ID
+    // Get a single flash sale by ID, with its products and pagination (also with custom per page)
     public function show(String $id)
     {
         try {
@@ -173,6 +174,54 @@ class FlashSaleController extends Controller
             return response()->json([
                 'message' => 'Flash sale retrieved',
                 'flashSale' => $flashSale
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Flash sale retrieval failed',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get the active flash sale with its products and pagination
+    public function display(Request $request)
+    {
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:15', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
+            ]);
+
+            // Find the flash sale that is active or return empty array
+            $flashSale = FlashSale::where('is_active', true)->get()->first();
+
+            // If no flash sale is active return a message and an empty array
+            if (!$flashSale) {
+                return response()->json([
+                    'message' => 'No active flash sale are active right now',
+                    'flashSale' => []
+                ], 202);
+            }
+
+            // Attach the products
+            $flashSaleProducts = Product::whereIn('id', $flashSale->products)->paginate(
+                $validated['perPage'] ?? 8, // Default to 8 per page
+                ['*'], // Get all columns
+                'flashSaleProducts', // Custom pagination page name
+                $validated['page'] ?? 1 // Default to page 1
+            );
+
+            return response()->json([
+                'message' => 'Flash sale retrieved',
+                'flashSaleInfo' => $flashSale,
+                'flashSaleProducts' => $flashSaleProducts->items(),
+                'pagination' => [
+                    'currentPage' => $flashSaleProducts->currentPage(),
+                    'perPage' => $flashSaleProducts->perPage(),
+                    'total' => $flashSaleProducts->total(),
+                    'lastPage' => $flashSaleProducts->lastPage(),
+                ]
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -288,4 +337,6 @@ class FlashSaleController extends Controller
             ], 500);
         }
     }
+
+    // TODO: Toggle a flash sale activation by ID (pause or resume a flash sale)
 }
