@@ -21,14 +21,25 @@ class ImageController extends Controller
      */
     public function index()
     {
-        // Get all the images from the database
-        $images = Image::all();
+        try {
+            // Get all the images from the database
+            $images = Image::all();
 
-        // Return the images in JSON format
-        return response()->json([
-            'message' => 'Images fetched successfully',
-            'images' => $images
-        ]);
+            // Return the images in JSON format
+            return response()->json([
+                'message' => 'Images fetched successfully',
+                'images' => $images
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unexpected Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'An unexpected error occurred, please try again.',
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
