@@ -302,7 +302,7 @@ class ImageController extends Controller
     public function display()
     {
         try {
-            // Get all the active images from the database should be 10 or less
+            // Get all the active images from the database (should be 10 or less)
             $images = Image::where('is_active', true)->get();
 
             // Check if the user is authenticated
@@ -310,17 +310,22 @@ class ImageController extends Controller
                 // The user is logged in and authenticated
                 return response()->json([
                     'message' => 'Images fetched successfully',
-                    'images' => $images // Return all the images whether they are public or members-only
+                    'visibility' => 'only members',
+                    'images' => $images->values()  // Return all the images whether they are public or members-only (values() to re-index the collection to avoid numeric keys)
+                ]);
+            } else {
+                // The user is not logged in
+                // Filter the images to return only the public images
+                $publicImages = Image::where('is_active', true)
+                    ->where('visibility', 'public')
+                    ->get();
+
+                return response()->json([
+                    'message' => 'Images fetched successfully',
+                    'visibility' => 'all users',
+                    'images' => $publicImages->values()
                 ]);
             }
-
-            // The user is not logged in
-            $publicImages = $images->where('visibility', 'public');
-
-            return response()->json([
-                'message' => 'Images fetched successfully',
-                'images' => $publicImages
-            ]);
         } catch (\Exception $e) {
             Log::error('Unexpected Error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
