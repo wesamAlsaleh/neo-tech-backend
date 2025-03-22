@@ -193,6 +193,15 @@ class ImageController extends Controller
             // Get the old image path
             $imagePath = str_replace('/storage/', '', parse_url($image->url, PHP_URL_PATH));
 
+            // If there is no image after deleting the image, return an error
+            if (Image::count() == 1) {
+                return response()->json([
+                    'message' => 'At least one image must be available',
+                    'devMessage' => 'LAST_IMAGE_ERROR'
+                ], 422);
+            }
+
+
             // Delete the old image file from the public disk using the path
             Storage::disk('public')->delete($imagePath);
 
@@ -238,6 +247,14 @@ class ImageController extends Controller
                 ], 422);
             }
 
+            // If the image is the only active image, return an error that at least one image must be active
+            if ($image->is_active && Image::where('is_active', true)->count() == 1) {
+                return response()->json([
+                    'message' => 'At least one image must be active',
+                    'devMessage' => 'LAST_ACTIVE_IMAGE_ERROR'
+                ], 422);
+            }
+
             // Toggle the active status of the image
             $image->update([
                 'is_active' => !$image->is_active
@@ -276,6 +293,14 @@ class ImageController extends Controller
         try {
             // Find the image record in the database
             $image = Image::findOrFail($id);
+
+            // If the image is the only public image, return an error that at least one image must be public
+            if ($image->visibility === 'public' && Image::where('visibility', 'public')->count() == 1) {
+                return response()->json([
+                    'message' => 'At least one image must be public',
+                    'devMessage' => 'LAST_PUBLIC_IMAGE_ERROR'
+                ], 422);
+            }
 
             // Toggle the visibility of the image
             $image->update([
