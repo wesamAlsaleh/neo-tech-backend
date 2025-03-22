@@ -80,7 +80,7 @@ class ShopFeatureController extends Controller
 
             // Generate the public URL (accessible via the browser)
             // $url = asset(str_replace('public/', 'storage/', $path));
-            $url = $url = url('storage/' . $path);
+            $url = url('storage/' . $path);
 
             // Add the ShopFeature to the database
             $ShopFeature = ShopFeature::create([
@@ -95,8 +95,11 @@ class ShopFeatureController extends Controller
                 'feature' => $ShopFeature->toArray(),
             ]);
         } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
             return response()->json([
-                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                'message' => $errorMessages,
                 'devMessage' => $e->errors(),
             ], 422);
         } catch (FileException $e) {

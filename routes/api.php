@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\HomePageController;
+use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -27,52 +28,39 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// // Test the API
+/**
+|----------------------------------------------------------------------------------------
+|   Test the API Routes
+|----------------------------------------------------------------------------------------
+ */
 Route::get('/test', function () {
     return 'API is working good';
 }); // working good
 
-
 /**
-|--------------------------------------------------------------------------
-|   Auth routes that are not protected by sanctum middleware
-|--------------------------------------------------------------------------
+|----------------------------------------------------------------------------------------
+|   Routes that are protected by sanctum middleware [require the user to be authenticated]
+|----------------------------------------------------------------------------------------
  */
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-
-// Auth routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated]
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user
 });
 
-
-// Client routes for getting categories
-Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
-Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
-
 /**
 |----------------------------------------------------------------------------------------
-|   C routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
+|   Routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware [require the user to be an admin]
 |----------------------------------------------------------------------------------------
  */
-// Admin routes that are protected by sanctum middleware (auth:sanctum) [require the user to be authenticated] and EnsureUserIsAdmin middleware [require the user to be an admin]
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    // Create/Update/Delete Category routes
+    // Category routes for admin
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
     Route::patch('/admin/toggle-category-status/{id}', [CategoryController::class, 'toggleCategoryStatusById']); // toggle category status by id "good"
-});
 
-/**
-|----------------------------------------------------------------------------------------------
-|   Products routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
-|----------------------------------------------------------------------------------------------
- */
-Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
+    // Product routes for admin
     Route::post('/admin/create-product', [ProductController::class, 'createProduct']); // create a new product "Good"
     Route::post('/admin/update-product/{id}', [ProductController::class, 'updateProductById']); // update a product by id "Good"
     Route::delete('/admin/delete-product/{id}', [ProductController::class, 'deleteProductById']); // soft delete a product by id "Good"
@@ -84,9 +72,45 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/toggle-product-sale-off/{id}', [ProductController::class, 'removeProductFromSale']); // put a product off sale by id "Good"
     Route::get('/admin/sale-products', [ProductController::class, 'getProductsOnSale']); // get all products "Good"
     Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale ""
+
+    // Trust Badge routes for admin
+    Route::get('/admin/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
+    Route::post('/admin/create-feature', [ShopFeatureController::class, 'store']); // create a new shop feature "Good"
+    Route::post('/admin/update-feature/{id}', [ShopFeatureController::class, 'update']); // update a shop feature by id "Good"
+    Route::delete('/admin/delete-feature/{id}', [ShopFeatureController::class, 'destroy']); // delete a shop feature by id "Good"
+    Route::patch('/admin/toggle-feature-status/{id}', [ShopFeatureController::class, 'toggleFeatureStatusById']); // toggle shop feature status by id "Good"
+
+    // Flash Sale routes for admin
+    Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales "Good"
+    Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale "Good"
+    Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id "Good"
+    Route::post('/admin/update-flash-sale/{id}', [FlashSaleController::class, 'update']); // update a flash sale by id "Good"
+    Route::delete('/admin/delete-flash-sale/{id}', [FlashSaleController::class, 'destroy']); // delete a flash sale by id "Good"
+
+    // Image Slider routes for admin
+    Route::get('/admin/images', [ImageController::class, 'index']); // get all images "Good"
+    Route::post('/admin/upload-image', [ImageController::class, 'store']); // upload an image "Good"
+    Route::post('/admin/update-image/{id}', [ImageController::class, 'update']); // update an image by id "Good"
+    Route::delete('/admin/delete-image/{id}', [ImageController::class, 'destroy']); // delete an image by id "Good"
+    Route::patch('/admin/toggle-image-status/{id}', [ImageController::class, 'toggleImageActivity']); // toggle image status by id "Good"
+    Route::patch('/admin/toggle-image-visibility/{id}', [ImageController::class, 'toggleImageVisibility']); // toggle image visibility by id "Good"
+
 });
 
-// Client routes for getting categories
+/**
+|----------------------------------------------------------------------------------------
+|   Routes that are not protected by any middleware [open to the public]
+|----------------------------------------------------------------------------------------
+ */
+// Auth routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Category routes
+Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
+
+// Product routes
 Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "Good"
 Route::get('/products/{id}', [ProductController::class, 'getProductById']); // get a single product "Good"
 Route::get('/products-by-name/{product_name}', [ProductController::class, 'searchProductsByName']); // get all products by name "Good"
@@ -100,33 +124,11 @@ Route::get('/best-selling-products', [ProductController::class, 'getBestSellingP
 Route::get('/latest-products', [ProductController::class, 'getLatestProducts']); // get latest products "Good"
 Route::get('/explore-products', [ProductController::class, 'getExploreProducts']); // get random products "Good"
 
-/**
-|----------------------------------------------------------------------------------------------
-|   Shop Features API routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
-|----------------------------------------------------------------------------------------------
- */
-Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    Route::get('/admin/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
-    Route::post('/admin/create-feature', [ShopFeatureController::class, 'store']); // create a new shop feature "Good"
-    Route::post('/admin/update-feature/{id}', [ShopFeatureController::class, 'update']); // update a shop feature by id "Good"
-    Route::delete('/admin/delete-feature/{id}', [ShopFeatureController::class, 'destroy']); // delete a shop feature by id "Good"
-    Route::patch('/admin/toggle-feature-status/{id}', [ShopFeatureController::class, 'toggleFeatureStatusById']); // toggle shop feature status by id "Good"
-});
-
-// Client routes for getting shop features
+// Trust Badge routes
 Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get the 3 active features "Good"
 
-/**
-|----------------------------------------------------------------------------------------------
-|   Flash Sales API routes that are protected by sanctum middleware and EnsureUserIsAdmin middleware
-|----------------------------------------------------------------------------------------------
- */
-Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
-    Route::get('/admin/flash-sales', [FlashSaleController::class, 'index']); // get all flash sales "Good"
-    Route::post('/admin/create-flash-sale', [FlashSaleController::class, 'store']); // create a new flash sale "Good"
-    Route::get('/admin/flash-sale/{id}', [FlashSaleController::class, 'show']); // get a single flash sale by id "Good"
-    Route::post('/admin/update-flash-sale/{id}', [FlashSaleController::class, 'update']); // update a flash sale by id "Good"
-    Route::delete('/admin/delete-flash-sale/{id}', [FlashSaleController::class, 'destroy']); // delete a flash sale by id "Good"
-});
+// Flash Sale routes
+Route::get('/display-active-flash-sale', [FlashSaleController::class, 'display']); // get the active flash sale "Good"
 
-Route::get('/admin/display-active-flash-sale', [FlashSaleController::class, 'display']); // get the active flash sale ""
+// Image Slider routes
+Route::get('/display-slider-images', [ImageController::class, 'display']); // get the active images "Good"
