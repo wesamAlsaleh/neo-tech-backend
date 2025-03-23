@@ -14,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
+
+
 class ImageController extends Controller
 {
     /**
@@ -335,19 +337,22 @@ class ImageController extends Controller
     /**
      * Display the resource for the slider.
      */
-    public function display()
+    public function display(Request $request)
     {
         try {
-            // Get all the active images from the database (should be 10 or less)
-            $images = Image::where('is_active', true)->get();
+            // Get the token from the request if it exists
+            $token = $request->bearerToken();
 
-            // Check if the user is authenticated
-            if (Auth::check()) {
+            // Check if the user is authenticated by checking the token if it exists
+            if ($token) {
+                // Get all the active images from the database (should be 10 or less)
+                $allImages = Image::where('is_active', true)->get();
+
                 // The user is logged in and authenticated
                 return response()->json([
                     'message' => 'Images fetched successfully',
-                    'visibility' => 'only members',
-                    'images' => $images->values()  // Return all the images whether they are public or members-only (values() to re-index the collection to avoid numeric keys)
+                    'visibility' => 'limited to authenticated user',
+                    'images' => $allImages->values()  // Return all the images whether they are public or members-only (values() to re-index the collection to avoid numeric keys)
                 ]);
             } else {
                 // The user is not logged in
