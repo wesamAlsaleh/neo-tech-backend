@@ -209,7 +209,7 @@ class ImageController extends Controller
             // If there is no image after deleting the image, return an error
             if (Image::count() == 1) {
                 return response()->json([
-                    'message' => 'At least one image must be available',
+                    'message' => 'At least one image must be available in the slider!',
                     'devMessage' => 'LAST_IMAGE_ERROR'
                 ], 422);
             }
