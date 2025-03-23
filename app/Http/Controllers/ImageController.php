@@ -21,11 +21,22 @@ class ImageController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            // Get all the images from the database
-            $images = Image::all();
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1',
+                'per_page' => 'integer|min:1',
+            ]);
+
+            // Get all the images from the database with pagination
+            $images = Image::paginate(
+                $request->per_page ?? 10, // Number of items per page
+                ['*'], // Get all columns
+                'page', // Custom page query string parameter
+                $request->page ?? 1 // Current page
+            );
 
             // Return the images in JSON format
             return response()->json([
@@ -203,9 +214,11 @@ class ImageController extends Controller
                 ], 422);
             }
 
-
             // Delete the old image file from the public disk using the path
             Storage::disk('public')->delete($imagePath);
+
+            // Delete the image record from the database
+            $image->delete();
 
             return response()->json([
                 'message' => "$image->name is deleted successfully",
