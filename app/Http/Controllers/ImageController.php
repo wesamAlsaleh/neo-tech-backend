@@ -76,6 +76,11 @@ class ImageController extends Controller
                 ], 422);
             }
 
+            // If the visibility is not public or members, put the visibility as public by default
+            if (!in_array($validatedData['visibility'], ['public', 'members'])) {
+                $validatedData['visibility'] = 'public';
+            }
+
             // Generate the image name by concatenating the name and the extension of the image, e.g., "image_ex.jpg"
             $imageName = str_replace(' ', '_', $validatedData['name']) . '.' . $request->image->extension();
 
@@ -98,6 +103,14 @@ class ImageController extends Controller
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
             $errorMessages = collect($e->errors())->flatten()->first();
+
+            // If the error message is "The image failed to upload.", return a custom error message
+            if ($errorMessages === 'The image failed to upload.') {
+                return response()->json([
+                    'message' => 'Image size should not exceed 2MB and should be in jpeg, png, jpg, gif, or svg format',
+                    'devMessage' => 'IMAGE_UPLOAD_ERROR'
+                ], 422);
+            }
 
             return response()->json([
                 'message' => $errorMessages,
