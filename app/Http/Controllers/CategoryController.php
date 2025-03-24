@@ -91,6 +91,14 @@ class CategoryController extends Controller
                 return $category;
             });
 
+            // If no categories are found return a JSON response as empty array
+            if ($categories->isEmpty()) {
+                return response()->json([
+                    'message' => 'No categories found',
+                    'categories' => [],
+                ], 200);
+            }
+
             // Return the response
             return response()->json([
                 'message' => 'Categories fetched successfully',

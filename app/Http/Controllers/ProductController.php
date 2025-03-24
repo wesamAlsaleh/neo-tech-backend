@@ -18,25 +18,44 @@ class ProductController extends Controller
 {
 
     // Get all products
-    public function getAllProducts(): JsonResponse
+    public function getAllProducts(Request $request): JsonResponse
     {
         try {
-            // Get all products
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get all products with pagination
             $products = Product::paginate(10); // get all products with pagination (10 products per page)
+
+            // If no products were found, return an empty array
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => []
+                ], 200);
+            }
 
             // Return the products
             return response()->json([
-                'success' => true,
                 'message' => 'Products retrieved successfully',
-                'products' => $products->toArray()
+                'products' => $products->items(), // Return only the products on the current page
+                'pagination' => [
+                    'current_page' => $products->currentPage(), // The current page number
+                    'total_pages' => $products->lastPage(), // The last page number
+                ]
             ], 200);
         } catch (\Exception $e) {
             // Log the actual error for debugging
             Log::error('Error fetching products: ' . $e->getMessage());
 
             return response()->json([
-                'success' => false,
                 'message' => 'Something went wrong while fetching products. Please try again later.',
+                'developerMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -48,8 +67,11 @@ class ProductController extends Controller
             // Attempt to find product or throw 404
             $product = Product::findOrFail($id);
 
-            // Ensure images are an array before modifying them
+            // Ensure images are an array before attempting to map over them
             $images = is_array($product->images) ? $product->images : [];
+
+            // Increment the view count
+            $product->increment('product_view');
 
             // // Check if the product has images
             // if ($product->images) {
@@ -65,28 +87,30 @@ class ProductController extends Controller
             // }
 
             // Prepend full URL to images
-            $product->images = array_map(function ($image) {
-                return asset('storage/' . ltrim($image, '/')); // Ensure path consistency
-            }, $images);
+            // $product->images = array_map(function ($image) {
+            //     return asset('storage/' . ltrim($image, '/')); // Ensure path consistency
+            // }, $images);
+
+            // Get the category of the product
+            $product->category_id = Category::findOrFail($product->category_id);
 
             // Return the product with images
             return response()->json([
-                'success' => true,
                 'message' => 'Product found',
                 'product' => $product
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Product not found'
+                'userMessage' => 'Product not found',
+                'developerMessage' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
             // Log the actual error for debugging
             Log::error('Error fetching product: ' . $e->getMessage());
 
             return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong while retrieving the product.'
+                'userMessage' => 'Something went wrong while retrieving the product.',
+                'developerMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -170,6 +194,11 @@ class ProductController extends Controller
                 'message' => "{$product->product_name} created successfully",
                 'productData' => $product->load('category')
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             return response()->json(
                 [
@@ -379,7 +408,187 @@ class ProductController extends Controller
         }
     }
 
-    // Search for products by name
+    // Put a product on sale
+    public function putProductOnSale(String $id, Request $request): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Validate the request
+            $validated = $request->validate([
+                'discount' => 'required|numeric|min:0|max:100', // Ensure discount is between 0 and 100%
+                'sale_end' => 'required|date|after:today', // Ensure the sale end date is in the future
+            ]);
+
+            // If the product is already on sale, return an error
+            if ($product->onSale) {
+                return response()->json([
+                    'message' => "{$product->product_name} is already on sale, the discount is {$product->discount}% and the sale ends on {$product->sale_end}",
+                    'developerMessage' => 'PRODUCT_ALREADY_ON_SALE',
+                ], 400);
+            }
+
+            // Calculate the product price after discount
+            $product->product_price_after_discount = $product->product_price - ($product->product_price * ($validated['discount'] / 100));
+
+            // Put the product on sale
+            $product->update([
+                'onSale' => true,
+                'discount' => $validated['discount'],
+                'sale_start' => now(), // Sale starts immediately
+                'sale_end' => $validated['sale_end'],
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} is now on sale, the discount is {$product->discount}% and the sale starts on {$product->sale_start} and the sale ends on {$product->sale_end}, the sale duration is {$product->sale_duration} days.",
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                // 'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
+                'message' => 'Validation failed',
+                'developerMessage' => $e->getMessage()
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+                'developerMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to put product on sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Remove a product from sale
+    public function removeProductFromSale(String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // If the product is not on sale, return an error
+            if (!$product->onSale) {
+                return response()->json([
+                    'message' => "{$product->product_name} is not on sale, hence cannot be removed from sale",
+                    'developerMessage' => 'PRODUCT_NOT_ON_SALE',
+                ], 400);
+            }
+
+            // Remove the product from sale
+            $product->update([
+                'onSale' => false,
+                'discount' => 0,
+                'sale_start' => null,
+                'sale_end' => null,
+                'product_price_after_discount' => 0,
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} is no longer on sale, the discount has been removed",
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+                'developerMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to remove product from sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Remove all products from sale
+    public function removeAllProductsFromSale(): JsonResponse
+    {
+        try {
+            // Get all products on sale
+            $products = Product::where('onSale', true)->get();
+
+            // If no products are on sale, return an error
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products are currently on sale',
+                    'developerMessage' => 'NO_PRODUCTS_ON_SALE',
+                ], 400);
+            }
+
+            // Remove all products from sale
+            $products->each(function ($product) {
+                $product->update([
+                    'onSale' => false,
+                    'discount' => 0,
+                    'sale_start' => null,
+                    'sale_end' => null,
+                    'product_price_after_discount' => 0,
+                ]);
+            });
+
+            // Return a success message
+            return response()->json([
+                'message' => 'All products have been removed from sale',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to remove all products from sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get all products on sale with pagination
+    public function getProductsOnSale(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get all products on sale
+            $products = Product::where('onSale', true)->paginate(9); // get all products on sale with pagination (9 products per page)
+
+            // Check if any products were found
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products on sale',
+                    'products' => [],
+                    'pagination' => [
+                        'current_page' => 1,
+                        'total_pages' => 1,
+                        'total_products_onSale' => 0,
+                    ]
+                ], 200);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Products on sale retrieved successfully',
+                'products' => $products->items(), // Return only the products on the current page
+                'pagination' => [
+                    'current_page' => $products->currentPage(), // The current page number
+                    'total_pages' => $products->lastPage(), // The last page number
+                    'total_products_onSale' => $products->total(), // The total number of products on sale
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to fetch products on sale",
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Search for products by name (case-insensitive for search bar)
     public function searchProductsByName(String $productName): JsonResponse
     {
         try {
@@ -498,7 +707,6 @@ class ProductController extends Controller
         }
     }
 
-
     // Search for products by status
     public function searchProductsByStatus(bool $status): JsonResponse
     {
@@ -538,34 +746,43 @@ class ProductController extends Controller
     public function searchProductsBySlug($slug): JsonResponse
     {
         try {
-            // Search for products where the slug is equal to the search term
-            $products = Product::where('slug', $slug)->get(); // get all products that match the search term
+            // Find a single product by slug
+            $product = Product::where('slug', $slug)->first();
 
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
+            // If product was not found, return a 404 response
+            if (!$product) {
+                return response()->json([
+                    'userMessage' => "Product not found",
+                    'developerMessage' => 'No product found with the given slug'
+                ], 404);
             }
 
-            // Transform the products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
+            // Increment view count
+            $product->increment('product_view');
 
-                // Return the product
-                return $product;
-            });
+            // Check if the product has images and prepend the full URL
+            // $product->images = $product->images ? array_map(function ($image) {
+            //     return asset('storage/' . $image);
+            // }, $product->images) : [];
 
-            // Return the products
-            return response()->json($productsWithImages, 200);
-        } catch (ModelNotFoundException) {
-            return response()->json(['message' => 'No products found'], 404);
+            // Get the category of the product
+            $product->category_id = Category::findOrFail($product->category_id);
+
+            // Return the product
+            return response()->json([
+                'message' => 'Product found',
+                'product' => $product,
+            ], 200);
         } catch (QueryException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to search for the product',
+                'developerMessage' => $e->getMessage()
+            ], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => "Failed to search for the product",
+                'developerMessage' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -592,6 +809,131 @@ class ProductController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Get all best selling products with pagination
+    public function getBestSellingProducts(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            ]);
+
+            // Get the page number from the request eg. /best-selling-products?page=1
+            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
+
+            // Get the best selling products with pagination based on the page number
+            $products = Product::where('is_active', true)
+                ->orderBy('product_sold', 'desc')
+                ->paginate(8);
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => [],
+                ], 200);
+            }
+
+            // Return the products along with pagination info
+            return response()->json([
+                'message' => 'Best selling products retrieved successfully',
+                'products' => $products->items(),  // The current page products
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'total_pages' => $products->lastPage(),
+                    'total_items' => $products->total(),
+                ]
+            ], 200);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch best selling products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get latest products
+    public function getLatestProducts(): JsonResponse
+    {
+        try {
+            // Get the top 10 latest products
+            $products = Product::orderBy('created_at', 'desc')->take(10)->get();
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json(['message' => 'No products found'], 404);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Latest products retrieved successfully',
+                'products' => $products
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch latest products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch latest products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get explore products (8 random products)
+    public function getExploreProducts(Request $request): JsonResponse
+    {
+        try {
+            // Get 18 random active products
+            $products = Product::where('is_active', true)
+                ->inRandomOrder()
+                ->limit(18)
+                ->get();
+
+            // Check if products were found
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'message' => 'No products found',
+                    'products' => []
+                ], 404);
+            }
+
+            // Return the products
+            return response()->json([
+                'message' => 'Explore products retrieved successfully',
+                'products' => $products,
+
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'No products found',
+                'developerMessage' => ''
+            ], 404);
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Failed to fetch explore products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch explore products',
+                'developerMessage' => $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -25,6 +25,11 @@ return new class extends Migration
             $table->json('images');
             $table->boolean('is_active')->default(false);
             $table->foreignId('category_id')->constrained('categories');
+            $table->boolean('onSale')->default(false);
+            $table->decimal('discount', 8, 2)->default(0); // 0.00 to 100.00 (percentage)
+            $table->decimal('product_price_after_discount', 8, 2)->nullable()->default(0);
+            $table->timestamp('sale_start')->nullable(); // Sale start date
+            $table->timestamp('sale_end')->nullable(); // Sale end date
             $table->timestamps();
             $table->softDeletes(); // Allows soft deleting
         });
