@@ -127,6 +127,7 @@ Route::get('/products-by-status/{status}', [ProductController::class, 'searchPro
 Route::get('/best-selling-products', [ProductController::class, 'getBestSellingProducts']); // get best selling products "Good"
 Route::get('/latest-products', [ProductController::class, 'getLatestProducts']); // get latest products "Good"
 Route::get('/explore-products', [ProductController::class, 'getExploreProducts']); // get random products "Good"
+Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
 
 // Trust Badge routes
 Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get the 3 active features "Good"
