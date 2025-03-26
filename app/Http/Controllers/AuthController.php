@@ -37,15 +37,15 @@ class AuthController extends Controller
             // if the user is created successfully generate a token for the user
             if ($user) {
                 $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
-
-                return response()->json([
-                    'message' => 'User created successfully',
-                    'userData' => [
-                        'user' => $user,
-                        'token' => $token,
-                    ],
-                ], 201);
             }
+
+            return response()->json([
+                'message' => 'User created successfully',
+                'userData' => [
+                    'user' => $user,
+                    'token' => $token,
+                ],
+            ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',

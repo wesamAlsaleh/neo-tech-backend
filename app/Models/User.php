@@ -49,4 +49,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // A user can have many wishlist entries
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
 }

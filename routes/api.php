@@ -6,6 +6,7 @@ use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -39,9 +40,16 @@ Route::get('/test', function () {
 |----------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Auth routes
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in "Good"
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
+
+    // Wishlist routes
+    Route::get('/wishlist-products', [WishlistController::class, 'index']); // get the authenticated user's wishlist "Good"
+    Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
+    Route::delete('/clear-wishlist/{id}', [WishlistController::class, 'destroy']); // remove a product from the wishlist using the wishlist id "Good"
+    Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
 });
 
 /**

@@ -55,10 +55,16 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    // products can belong to flash sales (many-to-many relationship)
+    // products can belong to flash sales
     public function flashSales()
     {
         return $this->belongsToMany(FlashSale::class);
+    }
+
+    // A product can appear in many wishlists
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
     }
 
     // Get the sale duration of a product
