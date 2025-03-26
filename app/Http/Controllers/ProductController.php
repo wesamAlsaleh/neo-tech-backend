@@ -937,7 +937,7 @@ class ProductController extends Controller
         }
     }
 
-    // Increment the product rating (stars)
+    // Increment the product rating (stars system)
     public function putRating(Request $request, String $id): JsonResponse
     {
         try {

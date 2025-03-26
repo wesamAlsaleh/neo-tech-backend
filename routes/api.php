@@ -45,6 +45,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
 
+    // Product routes
+    Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
+
     // Wishlist routes
     Route::get('/wishlist-products', [WishlistController::class, 'index']); // get the authenticated user's wishlist "Good"
     Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
@@ -127,7 +130,6 @@ Route::get('/products-by-status/{status}', [ProductController::class, 'searchPro
 Route::get('/best-selling-products', [ProductController::class, 'getBestSellingProducts']); // get best selling products "Good"
 Route::get('/latest-products', [ProductController::class, 'getLatestProducts']); // get latest products "Good"
 Route::get('/explore-products', [ProductController::class, 'getExploreProducts']); // get random products "Good"
-Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
 
 // Trust Badge routes
 Route::get('/active-features', [ShopFeatureController::class, 'getActiveFeatures']); // get the 3 active features "Good"
