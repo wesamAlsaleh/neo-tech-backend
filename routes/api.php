@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
@@ -53,6 +54,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
     Route::delete('/clear-wishlist/{id}', [WishlistController::class, 'destroy']); // remove a product from the wishlist using the wishlist id "Good"
     Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
+
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'index']); // View cart items ""
+    Route::post('/cart', [CartController::class, 'store']); // Add item to cart ""
+    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity ""
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart ""
+    Route::post('/cart/checkout', [CartController::class, 'checkout']); // Checkout cart ""
 });
 
 /**

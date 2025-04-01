@@ -55,4 +55,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Wishlist::class);
     }
+
+    // A user can have many cart items
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }

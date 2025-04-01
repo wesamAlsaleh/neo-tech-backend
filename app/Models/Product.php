@@ -90,4 +90,10 @@ class Product extends Model
          * }
          */
     }
+
+    // A product can appear in many cart items
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }
