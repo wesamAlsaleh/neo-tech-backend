@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -120,9 +121,29 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         try {
-            // Get the user cart items count and wishlist count
-            $userCartItemsCount = $request->user()->cartItems->count();
-            $userWishlistCount = $request->user()->wishlist->count();
+            // Get the authenticated user
+            $user = $request->user();
+
+            // Check if the user is null
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found',
+                    'devMessage' => 'USER_NOT_FOUND',
+                ], 404);
+            }
+
+            // Eager load products with cartItems and wishlist
+            $userCartItems = $user->cartItems()->with('product')->get();
+            $userWishlist = $user->wishlist()->with('product')->get();
+
+            // Filter the cart items and wishlist to count only active products
+            $userCartItemsCount = $userCartItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            $userWishlistCount = $userWishlist->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
 
             return response()->json([
                 'message' => 'User retrieved successfully',
