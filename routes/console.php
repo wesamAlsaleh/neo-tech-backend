@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\Schedule;
 // ->hourly();
 
 
-// Call the command to check the sale end date of a product
+// Call the command to check the sale end date of a product (activate/deactivate)
 Schedule::command('app:check-sale-end-date')->everyMinute();
 
-// Call the command to activate the flash sale
+// Call the command to manage the flash sale (activate/deactivate)
 Schedule::command('app:activate-flash-sale')->hourly();
+
+// Call the command to manage the cart products price (with discount/without discount)
+Schedule::command('app:update-cart-prices')->everyFifteenMinutes();
