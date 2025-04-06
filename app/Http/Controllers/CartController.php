@@ -44,8 +44,6 @@ class CartController extends Controller
                 return Product::where('id', $product->product_id)->where('is_active', true)->exists();
             });
 
-            // TODO: Filter out products that the user has not purchased
-
             // Calculate the total price of the user's cart
             $totalPrice = $cartItems->sum(function ($productInCart) {
                 return $productInCart->price * $productInCart->quantity;

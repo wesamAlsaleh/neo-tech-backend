@@ -36,6 +36,11 @@ class WishlistController extends Controller
                 ->with('product') // Load related product data
                 ->get();
 
+            // Filter out products that are not active
+            $wishlist = $wishlist->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            });
+
             return response()->json([
                 'message' =>  "$user->first_name's wishlist",
                 // "userWishlist" => $wishlist, // Wishlist with product details
