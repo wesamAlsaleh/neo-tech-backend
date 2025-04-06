@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\wishlist;
@@ -204,6 +205,87 @@ class WishlistController extends Controller
 
             return response()->json([
                 'message' => "$product->product_name has been removed from your wishlist",
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred',
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Add the products to the cart.
+     */
+    public function moveToCart(Request $request)
+    {
+        try {
+            // Get the authenticated user
+            $user = $request->user();
+
+            // Check if user exists
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found',
+                    'devMessage' => 'USER_NOT_FOUND'
+                ], 404);
+            }
+
+            // Get the wishlist items for the user
+            $wishlistItems =  $user->wishlist()
+                ->with('product') // Load related product data
+                ->get();
+
+            // If there are no wishlist items, return an error
+            if ($wishlistItems->isEmpty()) {
+                return response()->json([
+                    'message' => 'No items in wishlist',
+                    'devMessage' => 'WISHLIST_EMPTY'
+                ], 404);
+            }
+
+            // Loop through each wishlist item and add it to the cart
+            foreach ($wishlistItems as $item) {
+                $product = $item->product;
+
+                // Skip if product is not found, not active, or out of stock
+                if (!$product || !$product->is_active || $product->product_stock < 1) {
+                    continue;
+                }
+
+                // Check if product is already in cart
+                $existingCartItem = $user->cartItems()->where('product_id', $product->id)->first();
+
+                // If product is already in cart, increment quantity, else add it
+                if ($existingCartItem) {
+                    // Calculate the new quantity by adding 1 to the existing quantity, and ensure it does not exceed the product stock
+                    $newQty = min($existingCartItem->quantity + 1, $product->product_stock);
+
+                    // Get the price of the product
+                    $unitPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+
+                    // Update the cart item with the new quantity and price
+                    $existingCartItem->update([
+                        'quantity' => $newQty,
+                        'price' => $unitPrice * $newQty,
+                    ]);
+                } else {
+                    // Get the price of the product
+                    $unitPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+
+                    // Add the product to the cart with quantity 1
+                    CartItem::create([
+                        'user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'quantity' => 1,
+                        'price' => $unitPrice,
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'message' => 'Products moved to cart successfully',
+                'total_cart_items_count' => $user->cartItems()->count(),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
