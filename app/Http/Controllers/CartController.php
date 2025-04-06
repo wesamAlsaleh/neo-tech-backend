@@ -144,14 +144,15 @@ class CartController extends Controller
                 ->where('product_id', $product->id)
                 ->first();
 
-
-
             // If the item already exists, increment the quantity
             if ($cartItem) {
-                // Increment the quantity and update the price
+                // Calculate new quantity
+                $newQuantity = min($cartItem->quantity + $quantity, $product->product_stock); // Ensure it does not exceed stock eg. min(3 +   , 5) = 5, if stock is 5 it will be 5 max
+
+                // Update with new quantity and price
                 $cartItem->update([
-                    'quantity' => $quantity, // Update the quantity
-                    'price' => $cartItemPrice * $quantity,
+                    'quantity' => $newQuantity, // Update the quantity
+                    'price' => $cartItemPrice * $newQuantity,
                 ]);
 
                 $message = "$product->product_name has been updated in your cart";
@@ -176,6 +177,7 @@ class CartController extends Controller
                     'unit_price' => $cartItemPrice,
                     'total_price' => $cartItemPrice * $request->quantity,
                 ],
+                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -229,6 +231,9 @@ class CartController extends Controller
                 'quantity' => 'required|integer|min:1',
             ]);
 
+            // Get the quantity from the request
+            $quantity = $request->input('quantity');
+
             // Find the product in the cart
             $product = Product::find($cartItem->product_id);
 
@@ -264,10 +269,13 @@ class CartController extends Controller
                 $cartItemPrice = $product->product_price_after_discount;
             }
 
+            // Calculate new quantity
+            $newQuantity = min($quantity, $product->product_stock); // Ensure it does not exceed stock eg. min(3 +   , 5) = 5, if stock is 5 it will be 5 max
+
             // Increment the quantity and update the price
             $cartItem->update([
-                'quantity' => $request->quantity, // Update the quantity
-                'price' => $cartItemPrice * $cartItem->quantity,
+                'quantity' => $newQuantity, // Update the quantity
+                'price' => $cartItemPrice * $newQuantity, // Update the price
             ]);
 
             return response()->json([
@@ -279,6 +287,7 @@ class CartController extends Controller
                     'unit_price' => $cartItem->price,
                     'total_price' => $cartItem->price * $request->quantity,
                 ],
+                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -343,6 +352,7 @@ class CartController extends Controller
 
             return response()->json([
                 'message' => "$product->product_name has been removed from your cart",
+                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
             ]);
         } catch (\Exception $e) {
             return response()->json([

@@ -39,7 +39,7 @@ class WishlistController extends Controller
                 'message' =>  "$user->first_name's wishlist",
                 // "userWishlist" => $wishlist, // Wishlist with product details
                 'products' => $wishlist->pluck('product'), // Extract only the product details
-                'productCount' => $wishlist->pluck('product')->count()
+                'productCount' => $wishlist->pluck('product')->count() // Count of products in the wishlist
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -106,6 +106,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'message' => "$product->product_name has been added to your wishlist",
+                'wishlist_items_count' => $user->wishlist()->count(),
             ], 201);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -172,6 +173,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'message' => "$product->product_name has been removed from your wishlist",
+                'wishlist_items_count' => $user->wishlist()->count(),
             ], 200);
         } catch (\Exception $e) {
         }
