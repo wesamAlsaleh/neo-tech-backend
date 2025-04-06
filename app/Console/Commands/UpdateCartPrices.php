@@ -52,11 +52,11 @@ class UpdateCartPrices extends Command
             // Save the updated cart item
             if ($cartItem->save()) {
                 $this->info("Updated cart item ID: {$cartItem->id} with new price: {$cartItem->price}");
+                $this->info('Cart prices updated successfully.');
             } else {
                 $this->error("Failed to update cart item ID: {$cartItem->id}");
+                $this->error('Error saving the cart item.');
             }
-
-            $this->info('Cart prices updated successfully.');
         }
     }
 }
