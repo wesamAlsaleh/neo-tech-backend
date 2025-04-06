@@ -110,9 +110,19 @@ class WishlistController extends Controller
                 'product_id' => $product->id
             ]);
 
+            // Get the updated wishlist items with product details
+            $wishlistItems = $user->wishlist()
+                ->with('product')
+                ->get();
+
+            // Filter out products that are not active and count them
+            $wishlistItemsCount = $wishlistItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
             return response()->json([
                 'message' => "$product->product_name has been added to your wishlist",
-                'wishlist_items_count' => $user->wishlist()->count(),
+                'wishlist_items_count' => $wishlistItemsCount
             ], 201);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -177,9 +187,19 @@ class WishlistController extends Controller
             // Delete the wishlist item
             $wishlistItem->delete();
 
+            // Get the updated wishlist with product details
+            $wishlistItems = $user->wishlist()
+                ->with('product')
+                ->get();
+
+            // Filter out products that are not active
+            $wishlistItemsCount = $wishlistItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
             return response()->json([
                 'message' => "$product->product_name has been removed from your wishlist",
-                'wishlist_items_count' => $user->wishlist()->count(),
+                'wishlist_items_count' => $wishlistItemsCount,
             ], 200);
         } catch (\Exception $e) {
         }
@@ -288,9 +308,19 @@ class WishlistController extends Controller
                 }
             }
 
+            // Get the updated wishlist items with product details
+            $wishlistItems = $user->wishlist()
+                ->with('product')
+                ->get();
+
+            // Filter out products that are not active and count them
+            $wishlistItemsCount = $wishlistItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
             return response()->json([
                 'message' => 'Products moved to cart successfully',
-                'total_cart_items_count' => $user->cartItems()->count(),
+                'total_cart_items_count' => $wishlistItemsCount,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

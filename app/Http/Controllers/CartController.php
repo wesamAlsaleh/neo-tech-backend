@@ -166,6 +166,14 @@ class CartController extends Controller
                 $message = "$product->product_name has been added to your cart";
             }
 
+            // After adding the item to the cart, update the count of items in the cart with the active only items
+            $cartItems = CartItem::where('user_id', $user->id)->get();
+
+            // Filter out inactive products in the cart
+            $cartItemsCount = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            })->count();
+
             return response()->json([
                 'message' => $message,
                 'cart_item' => [
@@ -175,7 +183,7 @@ class CartController extends Controller
                     'unit_price' => $cartItemPrice,
                     'total_price' => $cartItemPrice * $request->quantity,
                 ],
-                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
+                'total_items_in_user_cart' => $cartItemsCount,
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -276,6 +284,14 @@ class CartController extends Controller
                 'price' => $cartItemPrice * $newQuantity, // Update the price
             ]);
 
+            // After adding the item to the cart, update the count of items in the cart with the active only items
+            $cartItems = CartItem::where('user_id', $user->id)->get();
+
+            // Filter out inactive products in the cart
+            $cartItemsCount = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            })->count();
+
             return response()->json([
                 'message' => "$user->first_name, your cart has been updated",
                 'cart_item' => [
@@ -285,7 +301,7 @@ class CartController extends Controller
                     'unit_price' => $cartItem->price,
                     'total_price' => $cartItem->price * $request->quantity,
                 ],
-                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
+                'total_items_in_user_cart' =>  $cartItemsCount,
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -348,9 +364,17 @@ class CartController extends Controller
             // Delete the cart item
             $cartItem->delete();
 
+            // After adding the item to the cart, update the count of items in the cart with the active only items
+            $cartItems = CartItem::where('user_id', $user->id)->get();
+
+            // Filter out inactive products in the cart
+            $cartItemsCount = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            })->count();
+
             return response()->json([
                 'message' => "$product->product_name has been removed from your cart",
-                'total_items_in_user_cart' => CartItem::where('user_id', $user->id)->count(),
+                'total_items_in_user_cart' =>  $cartItemsCount,
             ]);
         } catch (\Exception $e) {
             return response()->json([
