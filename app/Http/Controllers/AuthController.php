@@ -120,9 +120,15 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         try {
+            // Get the user cart items count and wishlist count
+            $userCartItemsCount = $request->user()->cartItems->count();
+            $userWishlistCount = $request->user()->wishlist->count();
+
             return response()->json([
                 'message' => 'User retrieved successfully',
                 'userData' => $request->user(),
+                'userCartItemsCount' => $userCartItemsCount,
+                'userWishlistCount' => $userWishlistCount,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

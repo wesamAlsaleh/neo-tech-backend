@@ -56,7 +56,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
 
     // Cart routes
-    Route::get('/cart', [CartController::class, 'index']); // View cart items ""
+    Route::get('/cart', [CartController::class, 'index']); // View cart items "Good"
     Route::post('/cart', [CartController::class, 'store']); // Add item to cart ""
     Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity ""
     Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart ""
