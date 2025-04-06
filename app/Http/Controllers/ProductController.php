@@ -936,4 +936,42 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    // Increment the product rating (stars system)
+    public function putRating(Request $request, String $id): JsonResponse
+    {
+        try {
+            // Find the product
+            $product = Product::findOrFail($id);
+
+            // Validate the request
+            $validated = $request->validate([
+                'rating' => 'required|numeric|min:1|max:5', // Ensure rating is between 1 and 5
+            ]);
+
+            // Get the current rating as average of all ratings and increment the rating
+            $newRating = ($product->product_rating + $validated['rating']) / 2;
+
+            // Update the product rating
+            $product->update([
+                'product_rating' => $newRating
+            ]);
+
+            // Return the updated product
+            return response()->json([
+                'message' => "{$product->product_name} rating incremented successfully",
+                'product' => $product
+            ], 200);
+        } catch (ModelNotFoundException) {
+            return response()->json([
+                'message' => 'Product not found',
+                'devMessage' => 'PRODUCT_NOT_FOUND'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to increment {$product->product_name} rating",
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

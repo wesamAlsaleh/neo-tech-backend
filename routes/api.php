@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -39,9 +41,27 @@ Route::get('/test', function () {
 |----------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum'])->group(function () {
+    // Auth routes
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in "Good"
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
+
+    // Product routes
+    Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
+
+    // Wishlist routes
+    Route::get('/wishlist-products', [WishlistController::class, 'index']); // get the authenticated user's wishlist "Good"
+    Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
+    Route::delete('/clear-wishlist/{id}', [WishlistController::class, 'destroy']); // remove a product from the wishlist using the wishlist id "Good"
+    Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
+    Route::post('/move-to-cart', [WishlistController::class, 'moveToCart']); // move a product from the wishlist to the cart using the product id ""
+
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'index']); // View cart items "Good"
+    Route::post('/cart', [CartController::class, 'store']); // Add item to cart ""
+    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity ""
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart ""
+    Route::post('/cart/checkout', [CartController::class, 'checkout']); // Checkout cart ""
 });
 
 /**

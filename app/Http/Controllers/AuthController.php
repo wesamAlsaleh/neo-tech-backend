@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,15 +38,15 @@ class AuthController extends Controller
             // if the user is created successfully generate a token for the user
             if ($user) {
                 $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
-
-                return response()->json([
-                    'message' => 'User created successfully',
-                    'userData' => [
-                        'user' => $user,
-                        'token' => $token,
-                    ],
-                ], 201);
             }
+
+            return response()->json([
+                'message' => 'User created successfully',
+                'userData' => [
+                    'user' => $user,
+                    'token' => $token,
+                ],
+            ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',
@@ -120,9 +121,35 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         try {
+            // Get the authenticated user
+            $user = $request->user();
+
+            // Check if the user is null
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found',
+                    'devMessage' => 'USER_NOT_FOUND',
+                ], 404);
+            }
+
+            // Eager load products with cartItems and wishlist
+            $userCartItems = $user->cartItems()->with('product')->get();
+            $userWishlist = $user->wishlist()->with('product')->get();
+
+            // Filter the cart items and wishlist to count only active products
+            $userCartItemsCount = $userCartItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            $userWishlistCount = $userWishlist->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
             return response()->json([
                 'message' => 'User retrieved successfully',
                 'userData' => $request->user(),
+                'userCartItemsCount' => $userCartItemsCount,
+                'userWishlistCount' => $userWishlistCount,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
