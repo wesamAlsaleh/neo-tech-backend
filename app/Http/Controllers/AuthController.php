@@ -40,13 +40,33 @@ class AuthController extends Controller
                 $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
             }
 
+            // Eager load products with cartItems and wishlist
+            $userCartItems = $user->cartItems()->with('product')->get();
+            $userWishlist = $user->wishlist()->with('product')->get();
+
+            // Filter the cart items and wishlist to count only active products
+            $userCartItemsCount = $userCartItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            $userWishlistCount = $userWishlist->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            // Get the user's address if it exists
+            $userAddress = $user->address()->first();
+
+
             return response()->json([
-                'message' => "$user->first_name registered successfully",
-                'userData' => [
+                'message' => 'User retrieved successfully',
+                'userData' =>  [
                     'user' => $user,
                     'token' => $token,
                 ],
-            ], 201);
+                'userCartItemsCount' => $userCartItemsCount,
+                'userWishlistCount' => $userWishlistCount,
+                'userAddress' => $userAddress,
+            ], 200);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
             $errorMessages = collect($e->errors())->flatten()->first();
@@ -87,12 +107,32 @@ class AuthController extends Controller
             // If the user exists generate a token for the user
             $token = $user->createToken($user->name . " Auth-Token")->plainTextToken; // create a token for the user with the user name and Auth-Token
 
+            // Eager load products with cartItems and wishlist
+            $userCartItems = $user->cartItems()->with('product')->get();
+            $userWishlist = $user->wishlist()->with('product')->get();
+
+            // Filter the cart items and wishlist to count only active products
+            $userCartItemsCount = $userCartItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            $userWishlistCount = $userWishlist->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            })->count();
+
+            // Get the user's address if it exists
+            $userAddress = $user->address()->first();
+
+
             return response()->json([
-                'message' => 'User logged in successfully',
-                'userData' => [
+                'message' => 'User retrieved successfully',
+                'userData' =>  [
                     'user' => $user,
                     'token' => $token,
                 ],
+                'userCartItemsCount' => $userCartItemsCount,
+                'userWishlistCount' => $userWishlistCount,
+                'userAddress' => $userAddress,
             ], 200);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
