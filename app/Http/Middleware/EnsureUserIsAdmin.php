@@ -21,14 +21,16 @@ class EnsureUserIsAdmin
         // check if the user is not logged in (i.e., the user is null)
         if (!$user) {
             return response()->json([
-                'message' => 'You must be logged in to access this route.'
+                'message' => 'You must be logged in to access this route.',
+                'devMessage' => 'USER_NOT_LOGGED_IN',
             ], 401); // Unauthorized
         }
 
         // Check if the user is an admin
         if ($user->role !== 'admin') {
             return response()->json([
-                'message' => 'You do not have the required role!'
+                'message' => 'You do not have the required role!',
+                'devMessage' => 'USER_NOT_ADMIN',
             ], 403); // Forbidden
         }
 

@@ -145,11 +145,16 @@ class AuthController extends Controller
                 return $item->product && $item->product->is_active;
             })->count();
 
+            // Get the user's address if it exists
+            $userAddress = $user->address()->first();
+
+
             return response()->json([
                 'message' => 'User retrieved successfully',
                 'userData' => $request->user(),
                 'userCartItemsCount' => $userCartItemsCount,
                 'userWishlistCount' => $userWishlistCount,
+                'userAddress' => $userAddress,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

@@ -7,6 +7,7 @@ use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -58,10 +59,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']); // View cart items "Good"
-    Route::post('/cart', [CartController::class, 'store']); // Add item to cart ""
-    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity ""
-    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart ""
+    Route::post('/cart', [CartController::class, 'store']); // Add item to cart "Good"
+    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity "Good"
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart "Good"
     Route::post('/cart/checkout', [CartController::class, 'checkout']); // Checkout cart ""
+
+    // User Address routes
+    Route::post('/add-address', [UserAddressController::class, 'create']); // Create a new user address "Good"
+    Route::post('/update-address', [UserAddressController::class, 'update']); // Update a user address "Good"
+
 });
 
 /**
@@ -111,6 +117,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::patch('/admin/toggle-image-status/{id}', [ImageController::class, 'toggleImageActivity']); // toggle image status by id "Good"
     Route::patch('/admin/toggle-image-visibility/{id}', [ImageController::class, 'toggleImageVisibility']); // toggle image visibility by id "Good"
 
+    // User Address routes for admin
+    Route::delete('/delete-address', [UserAddressController::class, 'destroy']); // delete a user address "Good"
 });
 
 /**
@@ -121,6 +129,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/forgot-password', [AuthController::class, 'forgotPassword']); // send a password reset link to the user's email ""
+// Route::post('/reset-password', [AuthController::class, 'resetPassword']); // reset the user's password ""
 
 // Category routes
 Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
