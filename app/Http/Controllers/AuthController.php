@@ -18,10 +18,10 @@ class AuthController extends Controller
         try {
             // Validate the request
             $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users|max:255',
-                'password' => 'required|string|min:8|max:255',
+                'first_name' => 'required|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
+                'last_name' => 'required|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
+                'email' => 'required|email|unique:users|max:255|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', // email format
+                'password' => 'required|string|min:8|max:255|',
                 'phone_number' => 'required|string|unique:users|min:8|max:8', // 8 digits phone number
             ]);
 
@@ -41,25 +41,27 @@ class AuthController extends Controller
             }
 
             return response()->json([
-                'message' => 'User created successfully',
+                'message' => "$user->first_name registered successfully",
                 'userData' => [
                     'user' => $user,
                     'token' => $token,
                 ],
             ], 201);
         } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
             return response()->json([
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'User not created',
-                'errorMessage' => $e->getMessage(),
+                'message' => 'Something went wrong while creating the user, please try again later',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     // Login a user
     public function login(Request $request): JsonResponse
@@ -67,7 +69,7 @@ class AuthController extends Controller
         try {
             // Validate the request
             $request->validate([
-                'email' => 'required|email|max:255',
+                'email' => 'required|email|max:255|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', // email format
                 'password' => 'required|string|min:8|max:255',
             ]);
 
@@ -77,7 +79,8 @@ class AuthController extends Controller
             // If the user does not exist or the password is incorrect return an error response
             if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
-                    'message' => 'Invalid credentials',
+                    'message' => 'Email or password is incorrect',
+                    'devMessage' => 'INVALID_CREDENTIALS',
                 ], 401);
             }
 
@@ -91,10 +94,18 @@ class AuthController extends Controller
                     'token' => $token,
                 ],
             ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'User not logged in',
-                'errorMessage' => $e->getMessage(),
+                'message' => 'Something went wrong while logging in the user, please try again later',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -111,8 +122,8 @@ class AuthController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'User not logged out',
-                'errorMessage' => $e->getMessage(),
+                'message' => 'An error occurred while logging out the user',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -158,8 +169,8 @@ class AuthController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'User not retrieved',
-                'errorMessage' => $e->getMessage(),
+                'message' => 'An error occurred while retrieving the user data',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -174,8 +185,79 @@ class AuthController extends Controller
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'User role not retrieved',
-                'errorMessage' => $e->getMessage(),
+                'message' => 'An error occurred while retrieving the user role',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Update the user profile
+    public function updateProfile(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'first_name' => 'nullable|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
+                'last_name' => 'nullable|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
+                'email' => 'nullable|email|max:255|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', // email format
+                'phone_number' => 'nullable|string|min:8|max:8|regex:/^[0-9]+$/', // 8 digits phone number
+            ]);
+
+            // Get the authenticated user
+            $user = $request->user();
+
+            // Check if the user is available
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found',
+                    'devMessage' => 'USER_NOT_FOUND',
+                ], 404);
+            }
+
+            // Check if the email already exists in the database
+            if ($request->email && User::where('email', $request->email)->where('id', '!=', $user->id)->exists()) {
+                return response()->json([
+                    'message' => 'Email already exists',
+                    'devMessage' => 'EMAIL_ALREADY_EXISTS',
+                ], 422);
+            }
+
+            // Check if the phone number already exists in the database
+            if ($request->phone_number && User::where('phone_number', $request->phone_number)->where('id', '!=', $user->id)->exists()) {
+                return response()->json([
+                    'message' => 'Phone number already exists',
+                    'devMessage' => 'PHONE_NUMBER_ALREADY_EXISTS',
+                ], 422);
+            }
+
+            // Update the user profile with the provided data or keep the existing data if not provided
+            $firstName = $request->first_name ?? $user->first_name;
+            $lastName = $request->last_name ?? $user->last_name;
+            $email = $request->email ?? $user->email;
+            $phoneNumber = $request->phone_number ?? $user->phone_number;
+
+            $user->update([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $email,
+                'phone_number' => $phoneNumber,
+            ]);
+
+            return response()->json([
+                'message' => "$user->first_name profile updated successfully",
+            ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating the user profile',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
