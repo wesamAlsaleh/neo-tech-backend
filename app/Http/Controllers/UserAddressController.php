@@ -69,7 +69,7 @@ class UserAddressController extends Controller
             ]);
 
             return response()->json([
-                'message' => "$user->first_name's address created successfully",
+                'message' => "$user->first_name's address added successfully",
             ], 201);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
@@ -124,7 +124,7 @@ class UserAddressController extends Controller
                 ]);
 
                 return response()->json([
-                    'message' => "$user->first_name's address created successfully",
+                    'message' => "$user->first_name's address added successfully",
                 ], 200);
             }
             // Update the user's address
