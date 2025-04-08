@@ -333,11 +333,14 @@ class OrderController extends Controller
                 // Increase the product sold count
                 $product->product_sold += $cartItem->quantity;
 
-                // Set the cart item as checked out
-                $cartItem->is_checked_out = true;
+                // Save the product
+                $product->save();
 
-                // Save the cart item
-                $cartItem->save();
+                // Remove the cart item
+                $cartItem->delete();
+
+                // Delete the cart item
+                $cartItem->delete();
             }
 
             return response()->json([

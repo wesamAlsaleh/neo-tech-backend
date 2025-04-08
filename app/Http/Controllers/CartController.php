@@ -37,9 +37,9 @@ class CartController extends Controller
             });
 
             // Filter out checked out products in the cart
-            $cartItems = $cartItems->filter(function ($item) {
-                return !$item->is_checked_out;
-            });
+            // $cartItems = $cartItems->filter(function ($item) {
+            //     return !$item->is_checked_out;
+            // });
 
             // Return a 204 No Content response if the cart is empty
             if ($cartItems->isEmpty()) {
