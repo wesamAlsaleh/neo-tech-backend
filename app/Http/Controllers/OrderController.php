@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
@@ -198,7 +199,7 @@ class OrderController extends Controller
     }
 
     // Logic to create order from cart items [for client]
-    public function checkout()
+    public function checkout(Request $request)
     {
         try {
             // Get the authenticated user
@@ -207,9 +208,15 @@ class OrderController extends Controller
             // Check if the user is authenticated
             if (!$user) {
                 return response()->json([
-                    'message' => 'User not authenticated'
+                    'message' => 'User not authenticated',
+                    'devMessage' => 'USER_NOT_AUTHENTICATED'
                 ], 401);
             }
+
+            // Validate the request
+            $request->validate([
+                'payment_method' => 'required|string|in:cash,credit_card,paypal,debit_card',
+            ]);
 
             // Get the user's cart items that are not checked out
             $userCart = User::find($user->id)
@@ -250,7 +257,7 @@ class OrderController extends Controller
                 'user_id' => $user->id,
                 'total_price' => $totalPrice,
                 'status' => 'pending',
-                'payment_method' => 'cash',
+                'payment_method' => $request->payment_method ?? 'cash',
                 'shipping_address' => $shippingAddress,
             ]);
 
@@ -274,6 +281,14 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Thank you for your order',
             ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error occurred while creating order',
