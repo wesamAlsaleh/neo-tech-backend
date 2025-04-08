@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -229,7 +230,6 @@ class OrderController extends Controller
                 ->address()
                 ->first();
 
-
             // Check if the cart is empty
             if ($userCart->isEmpty()) {
                 return response()->json([
@@ -241,7 +241,7 @@ class OrderController extends Controller
             // If user address is null, return an error
             if (is_null($userAddress)) {
                 return response()->json([
-                    'message' => 'Please add an address to your account',
+                    'message' => 'Please add an address to your account to proceed with the order',
                     'devMessage' => 'ADDRESS_NOT_FOUND'
                 ], 400);
             }
@@ -271,6 +271,23 @@ class OrderController extends Controller
                     'price' => $cartItem->price,
                 ]);
 
+                // Get the product from the database
+                $product = Product::findOrFail($cartItem->product_id);
+
+                // Check if the product is in stock
+                if ($product->product_stock < 5) {
+                    return response()->json([
+                        'message' => "Product {$product->product_name} is out of stock, please remove it from your cart",
+                        'devMessage' => 'OUT_OF_STOCK'
+                    ], 400);
+                }
+
+                // Reduce the product stock
+                $product->product_stock -= $cartItem->quantity;
+
+                // Increase the product sold count
+                $product->product_sold += $cartItem->quantity;
+
                 // Set the cart item as checked out
                 $cartItem->is_checked_out = true;
 
@@ -289,6 +306,11 @@ class OrderController extends Controller
                 'message' => $errorMessages,
                 'devMessage' => $e->errors(),
             ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error occurred while creating order',

@@ -31,6 +31,16 @@ class CartController extends Controller
             // Retrieve the user's cart items
             $cartItems = CartItem::where('user_id', $user->id)->get();
 
+            // Filter out inactive products in the cart
+            $cartItems = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            });
+
+            // Filter out checked out products in the cart
+            $cartItems = $cartItems->filter(function ($item) {
+                return !$item->is_checked_out;
+            });
+
             // Return a 204 No Content response if the cart is empty
             if ($cartItems->isEmpty()) {
                 return response()->json([
