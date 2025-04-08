@@ -137,6 +137,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
     Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
     Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
+    Route::get('/admin/orders-by-status/{status}', [OrderController::class, 'getOrdersByStatus']); // get all orders by status ""
 
 });
 

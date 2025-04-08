@@ -138,6 +138,51 @@ class OrderController extends Controller
         }
     }
 
+    // Logic to get orders based on their status with pagination [for admin dashboard]
+    public function getOrdersByStatus(String $status)
+    {
+        try {
+            // If the status is not provided, return an error
+            if (is_null($status)) {
+                return response()->json([
+                    'message' => 'Status not provided',
+                    'devMessage' => 'STATUS_NOT_PROVIDED'
+                ], 422);
+            }
+
+            // Validate the provided status
+            if (!in_array($status, ['pending', 'completed', 'canceled'])) {
+                return response()->json([
+                    'message' => 'Invalid status provided',
+                    'devMessage' => 'INVALID_STATUS'
+                ], 422);
+            }
+
+            // Get the orders by status
+            $orders = Order::where('status', $status)
+                ->paginate(10);
+
+            return response()->json([
+                'message' => 'Orders fetched successfully',
+                'orders' => $orders,
+                'total_orders' => Order::where('status', $status)->count(),
+            ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching orders',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
     // Logic to get order details by order ID [for admin dashboard]
     public function show(int $id)
     {
