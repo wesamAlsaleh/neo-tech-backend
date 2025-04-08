@@ -14,11 +14,24 @@ use Illuminate\Validation\ValidationException;
 class OrderController extends Controller
 {
     // logic to display all orders with pagination [for admin dashboard]
-    public function index()
+    public function index(Request $request)
     {
         try {
+            // Validate the request
+            $validated = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:15', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
+            ]);
+
             // Eager load user with selected fields using user() relationship
-            $orders = Order::with(['user:id,first_name,last_name,email'])->paginate(10);
+            $orders = Order::with(['user:id,first_name,last_name,email'])
+                ->orderBy('created_at', 'desc') // Order by created_at in descending order
+                ->paginate(
+                    $validated['perPage'] ?? 10, // Default to 10 per page if not provided
+                    ['*'], // Get all columns
+                    'flashSaleProducts', // Custom pagination page name
+                    $validated['page'] ?? 1 // Default to page 1 if not provided
+                );
 
             return response()->json([
                 'message' => 'Orders fetched successfully',
