@@ -45,11 +45,12 @@ class AuthController extends Controller
             $userCartItems = $user->cartItems()->with('product')->get();
             $userWishlist = $user->wishlist()->with('product')->get();
 
-            // Filter the cart items and wishlist to count only active products
+            // Filter the cart items to only get active products and not checked out
             $userCartItemsCount = $userCartItems->filter(function ($item) {
-                return $item->product && $item->product->is_active;
+                return $item->product && $item->product->is_active && !$item->is_checked_out;
             })->count();
 
+            // Filter the wishlist to count only active products
             $userWishlistCount = $userWishlist->filter(function ($item) {
                 return $item->product && $item->product->is_active;
             })->count();
@@ -112,11 +113,12 @@ class AuthController extends Controller
             $userCartItems = $user->cartItems()->with('product')->get();
             $userWishlist = $user->wishlist()->with('product')->get();
 
-            // Filter the cart items and wishlist to count only active products
+            // Filter the cart items to only get active products and not checked out
             $userCartItemsCount = $userCartItems->filter(function ($item) {
-                return $item->product && $item->product->is_active;
+                return $item->product && $item->product->is_active && !$item->is_checked_out;
             })->count();
 
+            // Filter the wishlist to count only active products
             $userWishlistCount = $userWishlist->filter(function ($item) {
                 return $item->product && $item->product->is_active;
             })->count();
@@ -190,7 +192,7 @@ class AuthController extends Controller
 
             // Filter the cart items and wishlist to count only active products
             $userCartItemsCount = $userCartItems->filter(function ($item) {
-                return $item->product && $item->product->is_active;
+                return $item->product && $item->product->is_active && !$item->is_checked_out;
             })->count();
 
             $userWishlistCount = $userWishlist->filter(function ($item) {

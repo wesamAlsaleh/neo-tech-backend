@@ -272,7 +272,7 @@ class CartController extends Controller
             // Check if the product is in stock
             if ($product->product_stock < $request->quantity) {
                 return response()->json([
-                    'message' => 'Product out of stock',
+                    'message' => "$product->product_name is out of stock",
                     'devMessage' => 'PRODUCT_OUT_OF_STOCK',
                 ], 400);
             }
