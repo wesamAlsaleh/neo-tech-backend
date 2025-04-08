@@ -319,7 +319,7 @@ class WishlistController extends Controller
             })->count();
 
             return response()->json([
-                'message' => 'Products moved to cart successfully',
+                'message' => 'Wishlist products moved to cart successfully',
                 'total_cart_items_count' => $wishlistItemsCount,
             ], 200);
         } catch (\Exception $e) {

@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -21,7 +22,7 @@ class AuthController extends Controller
                 'first_name' => 'required|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
                 'last_name' => 'required|string|max:255|regex:/^[a-zA-Z]+$/', // only letters and no spaces
                 'email' => 'required|email|unique:users|max:255|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', // email format
-                'password' => 'required|string|min:8|max:255|',
+                'password' => 'required|string|min:8|max:255|regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', // password should contain at least one letter and one number
                 'phone_number' => 'required|string|unique:users|min:8|max:8', // 8 digits phone number
             ]);
 
@@ -90,7 +91,7 @@ class AuthController extends Controller
             // Validate the request
             $request->validate([
                 'email' => 'required|email|max:255|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', // email format
-                'password' => 'required|string|min:8|max:255',
+                'password' => 'required|string|min:8|max:255|regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', // password should contain at least one letter and one number
             ]);
 
             // Check if the user exists in the database
@@ -297,6 +298,76 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while updating the user profile',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Change the user password
+    public function changePassword(Request $request)
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is available
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found',
+                    'devMessage' => 'USER_NOT_FOUND',
+                ], 404);
+            }
+
+            // Validate the request
+            $request->validate([
+                'current_password' => 'required|string|min:8|max:255',
+                'new_password' => 'required|string|min:8|max:255|regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', // password should contain at least one letter and one number
+                'confirm_password' => 'required|string|min:8|max:255', // should be the same as new password
+            ]);
+
+            // Check if the current password is correct
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'message' => 'Your current password is incorrect',
+                    'devMessage' => 'INVALID_CURRENT_PASSWORD',
+                ], 422);
+            }
+
+            // Check if the new password is the same as the confirm password
+            if ($request->new_password !== $request->confirm_password) {
+                return response()->json([
+                    'message' => 'New password and confirm password do not match',
+                    'devMessage' => 'PASSWORDS_DO_NOT_MATCH',
+                ], 422);
+            }
+
+            // Check if the new password is the same as the current password
+            if (Hash::check($request->new_password, $user->password)) {
+                return response()->json([
+                    'message' => 'New password cannot be the same as the current password',
+                    'devMessage' => 'NEW_PASSWORD_SAME_AS_CURRENT_PASSWORD',
+                ], 422);
+            }
+
+            // Update the password in the database
+            User::where('id', $user->id)->update([
+                'password' => Hash::make($request->new_password),
+            ]);
+
+            return response()->json([
+                'message' => 'Your password has been changed successfully',
+            ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while changing the user password',
                 'devMessage' => $e->getMessage(),
             ], 500);
         }

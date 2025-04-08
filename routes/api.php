@@ -47,6 +47,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
     Route::post('/update-user', [AuthController::class, 'updateProfile']); // update the authenticated user "Good"
+    Route::post('/update-password', [AuthController::class, 'changePassword']); // update the authenticated user password "Good"
 
     // Product routes
     Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
