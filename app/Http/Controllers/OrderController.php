@@ -17,8 +17,8 @@ class OrderController extends Controller
     public function index()
     {
         try {
-            // Get all orders with pagination
-            $orders = Order::paginate(10);
+            // Eager load user with selected fields using user() relationship
+            $orders = Order::with(['user:id,first_name,last_name,email'])->paginate(10);
 
             return response()->json([
                 'message' => 'Orders fetched successfully',
