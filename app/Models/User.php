@@ -67,4 +67,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(UserAddress::class);
     }
+
+    /**
+     * Relationship: A user can have many orders.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

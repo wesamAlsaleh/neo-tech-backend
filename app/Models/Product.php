@@ -14,7 +14,7 @@ class Product extends Model
 
     protected $dates = ['deleted_at']; // Ensure deleted_at is treated as a date
 
-    protected $appends = ['sale_duration']; // This makes sale_duration available in JSON responses eg. $product->sale_duration; // Outputs the sale duration in days
+    // protected $appends = ['sale_duration']; // This makes sale_duration available in JSON responses eg. $product->sale_duration; // Outputs the sale duration in days
 
     protected $fillable = [
         'product_name',
@@ -62,38 +62,16 @@ class Product extends Model
     }
 
     // A product can appear in many wishlists
-    public function wishlists()
-    {
-        return $this->hasMany(Wishlist::class);
-    }
+    // public function wishlists()
+    // {
+    //     return $this->hasMany(Wishlist::class);
+    // }
 
-    // Get the sale duration of a product
-    public function getSaleDurationAttribute()
-    {
-        if ($this->sale_start && $this->sale_end) {
-            return Carbon::parse($this->sale_start)->diffInDays(Carbon::parse($this->sale_end));
-        }
-        return null;
 
-        // Usage:
-        /**
-         * $product = Product::find(1);
-         * $product->sale_duration; // Outputs the sale duration in days
 
-         * Output:
-         * {
-         *   "id": 1,
-         * "product_name": "Product 1",
-         * "sale_start": "2025-03-05 20:27:38",
-         * "sale_end": "2025-03-10 20:27:38",
-         * "sale_duration": 5, // Sale duration in days
-         * }
-         */
-    }
-
-    // A product can appear in many cart items
-    public function cartItems()
-    {
-        return $this->hasMany(CartItem::class);
-    }
+    // // A product can appear in many cart items
+    // public function cartItems()
+    // {
+    //     return $this->hasMany(CartItem::class);
+    // }
 }

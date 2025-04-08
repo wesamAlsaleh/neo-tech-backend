@@ -383,9 +383,4 @@ class CartController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Checkout the cart.
-     */
-    public function checkout() {}
 }

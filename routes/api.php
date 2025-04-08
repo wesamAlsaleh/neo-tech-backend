@@ -5,6 +5,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
 use App\Http\Controllers\UserAddressController;
@@ -42,34 +43,38 @@ Route::get('/test', function () {
 |----------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Auth routes
+    // Auth routes for authenticated user
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in "Good"
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
     Route::post('/update-user', [AuthController::class, 'updateProfile']); // update the authenticated user "Good"
     Route::post('/update-password', [AuthController::class, 'changePassword']); // update the authenticated user password "Good"
 
-    // Product routes
+    // Product routes for authenticated user
     Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
 
-    // Wishlist routes
+    // Wishlist routes for authenticated user
     Route::get('/wishlist-products', [WishlistController::class, 'index']); // get the authenticated user's wishlist "Good"
     Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
     Route::delete('/clear-wishlist/{id}', [WishlistController::class, 'destroy']); // remove a product from the wishlist using the wishlist id "Good"
     Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
     Route::post('/move-to-cart', [WishlistController::class, 'moveToCart']); // move a product from the wishlist to the cart using the product id ""
 
-    // Cart routes
+    // Cart routes for authenticated user
     Route::get('/cart', [CartController::class, 'index']); // View cart items "Good"
     Route::post('/cart', [CartController::class, 'store']); // Add item to cart "Good"
     Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity "Good"
     Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart "Good"
-    Route::post('/cart/checkout', [CartController::class, 'checkout']); // Checkout cart ""
 
-    // User Address routes
+    // User Address routes for authenticated user
     Route::post('/add-address', [UserAddressController::class, 'create']); // Create a new user address "Good"
     Route::post('/update-address', [UserAddressController::class, 'update']); // Update a user address "Good"
 
+    // Order routes for authenticated user
+    Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
+    Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders by user id "Good"
+    Route::get('/order/{id}', [OrderController::class, 'getOrderById']); // get a single order by id "Good"
+    Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id ""
 });
 
 /**
@@ -121,6 +126,18 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // User Address routes for admin
     Route::delete('/delete-address', [UserAddressController::class, 'destroy']); // delete a user address "Good"
+
+    // Cart routes for admin
+    // TODO: add cart routes for admin
+
+    // Order routes for admin
+    Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
+    Route::put('/admin/pending-order/{id}', [OrderController::class, 'setOrderStatusToPending']); // update order status by id to pending "Good"
+    Route::put('/admin/completed-order/{id}', [OrderController::class, 'setOrderStatusToCompleted']); // update order status by id to completed "Good"
+    Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
+    Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
+    Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
+
 });
 
 /**

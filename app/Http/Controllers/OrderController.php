@@ -1,0 +1,357 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class OrderController extends Controller
+{
+    // logic to display all orders with pagination [for admin dashboard]
+    public function index()
+    {
+        try {
+            // Get all orders with pagination
+            $orders = Order::paginate(10);
+
+            return response()->json([
+                'message' => 'Orders fetched successfully',
+                'orders' => $orders,
+                'total_orders' => Order::count(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching orders',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to set order status to pending by order ID [for admin dashboard]
+    public function setOrderStatusToPending(int $id)
+    {
+        try {
+            // Find the order by ID
+            $order = Order::findOrFail($id);
+
+            // Check if the order is already pending
+            if ($order->status === 'pending') {
+                return response()->json([
+                    'message' => "Order with ID {$id} is already pending",
+                    'devMessage' => 'ORDER_ALREADY_PENDING'
+                ]);
+            }
+
+            // Update the order status to pending
+            $order->status = 'pending';
+            $order->save();
+
+            return response()->json([
+                'message' => "Order with ID {$id} status updated to pending",
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while updating order status',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to set order status to completed by order ID [for admin dashboard]
+    public function setOrderStatusToCompleted(int $id)
+    {
+        try {
+            // Find the order by ID
+            $order = Order::findOrFail($id);
+
+            // Check if the order is already completed
+            if ($order->status === 'completed') {
+                return response()->json([
+                    'message' => "Order with ID {$id} is already completed",
+                    'devMessage' => 'ORDER_ALREADY_COMPLETED'
+                ]);
+            }
+
+            // Update the order status to completed
+            $order->status = 'completed';
+            $order->save();
+
+            return response()->json([
+                'message' => "Order with ID {$id} status updated to completed",
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while updating order status',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to set order status to canceled by order ID [for admin dashboard]
+    public function setOrderStatusToCanceled(int $id)
+    {
+        try {
+            // Find the order by ID
+            $order = Order::findOrFail($id);
+
+            // Check if the order is already canceled
+            if ($order->status === 'canceled') {
+                return response()->json([
+                    'message' => "Order with ID {$id} is already canceled",
+                    'devMessage' => 'ORDER_ALREADY_CANCELED'
+                ]);
+            }
+
+            // Update the order status to canceled
+            $order->status = 'canceled';
+            $order->save();
+
+            return response()->json([
+                'message' => "Order with ID {$id} status updated to canceled",
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while updating order status',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to get order details by order ID [for admin dashboard]
+    public function show(int $id)
+    {
+        try {
+            // Find the order by ID
+            $order = Order::with('orderItems')
+                ->findOrFail($id);
+
+            // Bring the order items with details
+            $order->orderItems->each(function ($item) {
+                // Add product details to the order item
+                $item->product = $item->product()->first();
+            });
+
+            return response()->json([
+                'message' => 'Order details fetched successfully',
+                'order' => $order,
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching order details',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to get orders by user ID [for admin dashboard] (without pagination)
+    public function getOrdersByUserId(int $userId)
+    {
+        try {
+            // Find the user by ID
+            $user = User::findOrFail($userId);
+
+            // Get the user's
+            $orders = Order::where('user_id', $user->id)
+                ->with('orderItems')
+                ->get();
+
+            return response()->json([
+                'message' => 'Orders fetched successfully',
+                'orders' => $orders,
+                'total_orders' => $user->orders()->count(),
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'User not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching orders',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to create order from cart items [for client]
+    public function checkout()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Get the user's cart items that are not checked out
+            $userCart = User::find($user->id)
+                ->cartItems()
+                ->where('is_checked_out', false)
+                ->get();
+
+            // Get the user address
+            $userAddress = User::find($user->id)
+                ->address()
+                ->first();
+
+
+            // Check if the cart is empty
+            if ($userCart->isEmpty()) {
+                return response()->json([
+                    'message' => 'Your cart is empty, please add items to your cart to proceed',
+                    'devMessage' => 'EMPTY_CART'
+                ], 400);
+            }
+
+            // If user address is null, return an error
+            if (is_null($userAddress)) {
+                return response()->json([
+                    'message' => 'Please add an address to your account',
+                    'devMessage' => 'ADDRESS_NOT_FOUND'
+                ], 400);
+            }
+
+            // Calculate the total price of the cart
+            $totalPrice = $userCart->sum('price');
+
+            // Format the shipping address
+            $shippingAddress = "Building number:{$userAddress->home_number}, Street number:{$userAddress->street_number}, Block number:{$userAddress->block_number} ,City:{$userAddress->city}";
+
+            // Create a new order record
+            $order = Order::create([
+                'user_id' => $user->id,
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+                'payment_method' => 'cash',
+                'shipping_address' => $shippingAddress,
+            ]);
+
+            // Create order items for each item in the cart
+            foreach ($userCart as $cartItem) {
+                // Create a new order item record
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $cartItem->product_id,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $cartItem->price,
+                ]);
+
+                // Set the cart item as checked out
+                $cartItem->is_checked_out = true;
+
+                // Save the cart item
+                $cartItem->save();
+            }
+
+            return response()->json([
+                'message' => 'Thank you for your order',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while creating order',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to get all the user orders without the items [for client] (with pagination)
+    public function getUserOrders()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Get the user's orders with pagination
+            $orders = Order::where('user_id', $user->id)
+                ->paginate(10);
+
+            return response()->json([
+                'message' => 'Orders fetched successfully',
+                'orders' => $orders,
+                'total_orders' => $orders->total(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching orders',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // Logic to get order details by order ID [for client]
+    public function getUserOrderDetails(int $id)
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Find the order by ID
+            $order = Order::with('orderItems')
+                ->where('user_id', $user->id)
+                ->findOrFail($id);
+
+            // Bring the order items with details
+            $order->orderItems->each(function ($item) {
+                // Add product details to the order item
+                $item->product = $item->product()->first();
+            });
+
+            return response()->json([
+                'message' => "Order for '{$user->first_name}' fetched successfully",
+                'order' => $order,
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'devMessage' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error occurred while fetching order details',
+                'devMessage' => $e->getMessage()
+            ]);
+        }
+    }
+}
