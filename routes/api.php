@@ -65,6 +65,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/cart', [CartController::class, 'store']); // Add item to cart "Good"
     Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity "Good"
     Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart "Good"
+    Route::get('/cart-summary', [CartController::class, 'cartSummary']); // View cart summary ""
+
 
     // User Address routes for authenticated user
     Route::post('/add-address', [UserAddressController::class, 'create']); // Create a new user address "Good"

@@ -269,13 +269,21 @@ class WishlistController extends Controller
                 ], 404);
             }
 
+            // Filter out products that are not active
+            $wishlistItems = $wishlistItems->filter(function ($item) {
+                return $item->product && $item->product->is_active;
+            });
+
             // Loop through each wishlist item and add it to the cart
             foreach ($wishlistItems as $item) {
                 $product = $item->product;
 
-                // Skip if product is not found, not active, or out of stock
-                if (!$product || !$product->is_active || $product->product_stock < 1) {
-                    continue;
+                // Check if the product is not in stock
+                if ($product->product_stock < 1) {
+                    return response()->json([
+                        'message' => "$product->product_name is not available, please remove it from your wishlist to move other products to your cart.",
+                        'devMessage' => 'PRODUCT_NOT_AVAILABLE'
+                    ], 404);
                 }
 
                 // Check if product is already in cart
@@ -319,7 +327,7 @@ class WishlistController extends Controller
             })->count();
 
             return response()->json([
-                'message' => 'Wishlist products moved to cart successfully',
+                'message' => 'Products have been moved to your cart',
                 'total_cart_items_count' => $wishlistItemsCount,
             ], 200);
         } catch (\Exception $e) {

@@ -393,4 +393,61 @@ class CartController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * TODO: Clear the cart.
+     */
+    public function clear() {}
+
+    /**
+     * Cart summary.
+     */
+    public function cartSummary()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'devMessage' => 'USER_NOT_AUTHENTICATED',
+                ], 401);
+            }
+
+            // Retrieve the user's cart items
+            $cartItems = CartItem::where('user_id', $user->id)->get();
+
+            // Check if the cart is empty
+            if ($cartItems->isEmpty()) {
+                return response()->json([
+                    'message' => "Your cart is empty",
+                    'devMessage' => 'CART_EMPTY',
+                ], 202);
+            }
+
+            // Filter out inactive products in the cart
+            $cartItems = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            });
+
+            // Calculate the total price of the user's cart
+            $totalPrice = $cartItems->sum(function ($productInCart) {
+                return $productInCart->price * $productInCart->quantity;
+            });
+
+            // Return the cart items
+            return response()->json([
+                'message' => 'Cart summary retrieved successfully',
+                'total_items' => $cartItems->count(),
+                "total_price" => $totalPrice,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving the cart summary',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
