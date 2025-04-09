@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
@@ -260,6 +261,9 @@ class OrderController extends Controller
     // Logic to create order from cart items [for client]
     public function checkout(Request $request)
     {
+        // Start a database transaction (to ensure data integrity)
+        DB::beginTransaction();
+
         try {
             // Get the authenticated user
             $user = Auth::user();
@@ -280,7 +284,6 @@ class OrderController extends Controller
             // Get the user's cart items that are not checked out
             $userCart = User::find($user->id)
                 ->cartItems()
-                ->where('is_checked_out', false)
                 ->get();
 
             // Get the user address
@@ -310,6 +313,23 @@ class OrderController extends Controller
             // Format the shipping address
             $shippingAddress = "Building number:{$userAddress->home_number}, Street number:{$userAddress->street_number}, Block number:{$userAddress->block_number} ,City:{$userAddress->city}";
 
+            // Loop through the cart items and check if the product is in stock
+            foreach ($userCart as $cartItem) {
+                // Get the product from the database
+                $product = Product::findOrFail($cartItem->product_id);
+
+                // Initialize the minimum stock threshold (checkout is allowed if stock is greater than this value)
+                $minimumStockThreshold = 5;
+
+                // Check if the product is is less than the minimum stock threshold
+                if ($product->product_stock < $minimumStockThreshold) {
+                    return response()->json([
+                        'message' => "Product {$product->product_name} is out of stock, please remove it from your cart",
+                        'devMessage' => 'OUT_OF_STOCK'
+                    ], 400);
+                }
+            }
+
             // Create a new order record
             $order = Order::create([
                 'user_id' => $user->id,
@@ -332,14 +352,6 @@ class OrderController extends Controller
                 // Get the product from the database
                 $product = Product::findOrFail($cartItem->product_id);
 
-                // Check if the product is in stock
-                if ($product->product_stock < 5) {
-                    return response()->json([
-                        'message' => "Product {$product->product_name} is out of stock, please remove it from your cart",
-                        'devMessage' => 'OUT_OF_STOCK'
-                    ], 400);
-                }
-
                 // Reduce the product stock
                 $product->product_stock -= $cartItem->quantity;
 
@@ -351,10 +363,10 @@ class OrderController extends Controller
 
                 // Remove the cart item
                 $cartItem->delete();
-
-                // Delete the cart item
-                $cartItem->delete();
             }
+
+            // Commit the transaction after all operations are successful
+            DB::commit();
 
             return response()->json([
                 'message' => 'Thank you for your order',
@@ -373,6 +385,9 @@ class OrderController extends Controller
                 'devMessage' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
+            // If an error occurs, rollback the transaction
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Error occurred while creating order',
                 'devMessage' => $e->getMessage()
