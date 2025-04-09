@@ -419,11 +419,14 @@ class CartController extends Controller
             // Retrieve the user's cart items
             $cartItems = CartItem::where('user_id', $user->id)->get();
 
+            //
+            $totalPrice = 0;
+
             // Check if the cart is empty
             if ($cartItems->isEmpty()) {
                 return response()->json([
                     'message' => "Your cart is empty",
-                    'devMessage' => 'CART_EMPTY',
+                    "total_price" => $totalPrice,
                 ], 202);
             }
 
@@ -433,14 +436,17 @@ class CartController extends Controller
             });
 
             // Calculate the total price of the user's cart
-            $totalPrice = $cartItems->sum(function ($productInCart) {
-                return $productInCart->price * $productInCart->quantity;
-            });
+            foreach ($cartItems as $cartItem) {
+                $product = Product::find($cartItem->product_id);
+                if ($product) {
+                    $unitPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+                    $totalPrice += $unitPrice * $cartItem->quantity;
+                }
+            }
 
             // Return the cart items
             return response()->json([
                 'message' => 'Cart summary retrieved successfully',
-                'total_items' => $cartItems->count(),
                 "total_price" => $totalPrice,
             ], 200);
         } catch (\Exception $e) {

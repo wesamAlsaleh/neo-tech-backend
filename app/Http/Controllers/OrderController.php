@@ -369,7 +369,12 @@ class OrderController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Thank you for your order',
+                'message' => "Your order with ID {$order->id} has been created successfully, your order now is {$order->status} and will be shipped to {$shippingAddress}",
+                'order_id' => $order->id,
+                'total_price' => $order->total_price,
+                'shipping_address' => $order->shipping_address,
+                'payment_method' => $order->payment_method,
+                'order_status' => $order->status,
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors

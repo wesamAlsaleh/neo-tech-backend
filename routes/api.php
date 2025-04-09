@@ -65,7 +65,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/cart', [CartController::class, 'store']); // Add item to cart "Good"
     Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity "Good"
     Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart "Good"
-    Route::get('/cart-summary', [CartController::class, 'cartSummary']); // View cart summary ""
+    Route::get('/cart/summary', [CartController::class, 'cartSummary']); // View cart summary "Good"
 
 
     // User Address routes for authenticated user
@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
     Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders by user id "Good"
     Route::get('/order/{id}', [OrderController::class, 'getOrderById']); // get a single order by id "Good"
-    Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id ""
+    Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id "Good"
 });
 
 /**
