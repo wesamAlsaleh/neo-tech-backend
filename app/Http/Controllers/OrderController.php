@@ -152,7 +152,7 @@ class OrderController extends Controller
         }
     }
 
-    // Logic to get orders based on their status with pagination [for admin dashboard]
+    // Logic to get orders based on their status with pagination [for admin dashboard (filtering)]
     public function getOrdersByStatus(String $status)
     {
         try {
@@ -210,6 +210,12 @@ class OrderController extends Controller
                 // Add product details to the order item
                 $item->product = $item->product()->first();
             });
+
+            // Get the user details
+            $user = User::findOrFail($order->user_id);
+
+            // Add user details to the order object
+            $order->user = $user;
 
             return response()->json([
                 'message' => 'Order details fetched successfully',

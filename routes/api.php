@@ -75,7 +75,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Order routes for authenticated user
     Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
     Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders by user id "Good"
-    Route::get('/order/{id}', [OrderController::class, 'getOrderById']); // get a single order by id "Good"
     Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id "Good"
 });
 
@@ -134,9 +133,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Order routes for admin
     Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
+    // TODO: Merge the following 3 routes into one route
     Route::put('/admin/pending-order/{id}', [OrderController::class, 'setOrderStatusToPending']); // update order status by id to pending "Good"
     Route::put('/admin/completed-order/{id}', [OrderController::class, 'setOrderStatusToCompleted']); // update order status by id to completed "Good"
     Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
+
     Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
     Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
     Route::get('/admin/orders-by-status/{status}', [OrderController::class, 'getOrdersByStatus']); // get all orders by status "Good"
