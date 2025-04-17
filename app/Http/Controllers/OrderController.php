@@ -327,7 +327,7 @@ class OrderController extends Controller
                     $productPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
 
                     // This prevents overselling when inventory is low
-                    $MINIMUM_STOCK_THRESHOLD = 5;
+                    $MINIMUM_STOCK_THRESHOLD = 1;
 
                     // Check if product stock is insufficient to fulfill the order
                     if ($product->product_stock < $MINIMUM_STOCK_THRESHOLD || $product->product_stock < $item['quantity']) {

@@ -6,11 +6,13 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -145,6 +147,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/orders-by-status/{status}', [OrderController::class, 'getOrdersByStatus']); // get all orders by status "Good"
     Route::post('/admin/update-order/{id}', [OrderController::class, 'updateOrderDetails']); // update order details "Good"
 
+    // Order Item routes for admin
+    Route::delete('/admin/order-items/remove-item', [OrderItemController::class, 'removeOrderItem']); // remove order item from an order "Good"
 });
 
 /**
