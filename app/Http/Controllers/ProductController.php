@@ -595,6 +595,42 @@ class ProductController extends Controller
         }
     }
 
+    // Search product by name, barcode
+    public function searchProduct(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'query' => 'nullable|string|max:255', // Ensure the query is a string and not empty
+            ]);
+
+            $query = $request->input('query');
+
+            // Search for products where the name starts with the query
+            $products = Product::where('product_name', 'like', "{$query}%") // Starts with `q`
+                ->orWhere('product_barcode', 'like', "%{$query}%") // Or by barcode == `q`
+                ->get();
+
+            return response()->json([
+                'results' => $products,
+                'items_count' => $products->count(),
+            ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to search for the product',
+                'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Search for products by name (case-insensitive for search bar)
     public function searchProductsByName(String $productName): JsonResponse
     {

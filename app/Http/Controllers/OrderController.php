@@ -258,7 +258,7 @@ class OrderController extends Controller
                 'street_number' => 'nullable|string|max:10',
                 'block_number' => 'nullable|string|max:10|regex:/^[A-Za-z]?\d+[A-Za-z]?$/', // Called "Block No." (usually 3 digits)
                 'city' => 'nullable|string|max:255',
-                'items' => 'required|array', // (array) of old items and new items to be added
+                'items' => 'nullable|array', // (array) of old items and new items to be added
                 'items.*.product_id' => [
                     'required',      // Required field - every order item must reference a product
                     'integer',       // Must be numeric integer
@@ -299,7 +299,6 @@ class OrderController extends Controller
                 ], 404);
             }
 
-
             // Array to hold the product IDs (to check later if they exist in the order items or removed)
             $productIds = [];
 
@@ -309,64 +308,67 @@ class OrderController extends Controller
             // Array to hold low stock products
             $lowStockProducts = [];
 
-            // Loop through the items and update or overright the existing items or add new items
-            foreach ($request->items as $item) {
-                // Get the product details
-                $product = Product::find($item['product_id']);
+            // If item are provided
+            if ($request->has('items')) {
+                // Loop through the items and update or overright the existing items or add new items
+                foreach ($request->items as $item) {
+                    // Get the product details
+                    $product = Product::find($item['product_id']);
 
-                // If not found return an error
-                if (!$product) {
-                    return response()->json([
-                        'message' => "Product with ID {$item['product_id']} not found",
-                        'devMessage' => 'PRODUCT_NOT_FOUND'
-                    ], 404);
+                    // If not found return an error
+                    if (!$product) {
+                        return response()->json([
+                            'message' => "Product with ID {$item['product_id']} not found",
+                            'devMessage' => 'PRODUCT_NOT_FOUND'
+                        ], 404);
+                    }
+
+                    // Get the price based on whether the product is on sale or not
+                    $productPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+
+                    // This prevents overselling when inventory is low
+                    $MINIMUM_STOCK_THRESHOLD = 5;
+
+                    // Check if product stock is insufficient to fulfill the order
+                    if ($product->product_stock < $MINIMUM_STOCK_THRESHOLD || $product->product_stock < $item['quantity']) {
+                        // Add to low stock list
+                        $lowStockProducts[] = [
+                            'product_id' => $product->id,
+                            'product_name' => $product->product_name,
+                            'stock' => $product->product_stock,
+                        ];
+                        continue;
+                    }
+
+                    // Add the product ID to the array
+                    $productIds[] = $product->id;
+
+                    // Ensure the product is in the order items
+                    $orderItem = $orderItems->where('product_id', $product->id)->first();
+
+                    // If the product is in the order items, update the quantity, otherwise create a new order item
+                    if ($orderItem) {
+                        // Update existing item
+                        $orderItem->quantity = $item['quantity'] ?? $orderItem->quantity;
+                        $orderItem->price = $productPrice * $orderItem->quantity;
+                        $orderItem->save();
+                    } else {
+                        // Create a new order item record
+                        OrderItem::create([
+                            'order_id' => $order->id,
+                            'product_id' => $product->id,
+                            'quantity' => $item['quantity'],
+                            'price' =>  $productPrice * $item['quantity'],
+                        ]);
+                    }
+
+                    // Reduce stock and increase sold count
+                    $product->product_stock -= $item['quantity'];
+                    $product->product_sold += $item['quantity'];
+                    $product->save();
+
+                    $processedProductCount++;
                 }
-
-                // Get the price based on whether the product is on sale or not
-                $productPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
-
-                // This prevents overselling when inventory is low
-                $MINIMUM_STOCK_THRESHOLD = 5;
-
-                // Check if product stock is insufficient to fulfill the order
-                if ($product->product_stock < $MINIMUM_STOCK_THRESHOLD) {
-                    // Add to low stock list
-                    $lowStockProducts[] = [
-                        'product_id' => $product->id,
-                        'product_name' => $product->product_name,
-                        'stock' => $product->product_stock,
-                    ];
-                    continue;
-                }
-
-                // Add the product ID to the array
-                $productIds[] = $product->id;
-
-                // Ensure the product is in the order items
-                $orderItem = $orderItems->where('product_id', $product->id)->first();
-
-                // If the product is in the order items, update the quantity, otherwise create a new order item
-                if ($orderItem) {
-                    // Update existing item
-                    $orderItem->quantity = $item['quantity'] ?? $orderItem->quantity;
-                    $orderItem->price = $productPrice * $orderItem->quantity;
-                    $orderItem->save();
-                } else {
-                    // Create a new order item record
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_id' => $product->id,
-                        'quantity' => $item['quantity'],
-                        'price' =>  $productPrice * $item['quantity'],
-                    ]);
-                }
-
-                // Reduce stock and increase sold count
-                $product->product_stock -= $item['quantity'];
-                $product->product_sold += $item['quantity'];
-                $product->save();
-
-                $processedProductCount++;
             }
 
             // If no products were processed, return warning
@@ -374,8 +376,7 @@ class OrderController extends Controller
                 DB::rollBack();
 
                 return response()->json([
-                    'message' => 'No items were updated or added due to low stock.',
-                    'lowStockProducts' => $lowStockProducts,
+                    'message' => count($lowStockProducts) . " items were skipped due to low stock.",
                     'devMessage' => 'ALL_ITEMS_SKIPPED_LOW_STOCK'
                 ], 400); // Or 422
             }

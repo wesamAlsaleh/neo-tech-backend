@@ -101,7 +101,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/toggle-product-sale/{id}', [ProductController::class, 'putProductOnSale']); // put a product on sale by id "Good"
     Route::post('/admin/toggle-product-sale-off/{id}', [ProductController::class, 'removeProductFromSale']); // put a product off sale by id "Good"
     Route::get('/admin/sale-products', [ProductController::class, 'getProductsOnSale']); // get all products "Good"
-    Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale ""
+    Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale "Good"
+    Route::get('/admin/products/search', [ProductController::class, 'searchProduct']); // search products by name or barcode or category "Good"
+
 
     // Trust Badge routes for admin
     Route::get('/admin/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
