@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class OrderItemController extends Controller
 {
@@ -62,9 +63,21 @@ class OrderItemController extends Controller
                 $total += $item->price * $item->quantity;
             }
 
+            // Update the order total
+            $order->total_price = $total;
+            $order->save();
+
             return response()->json([
                 'message' => 'Order item removed successfully',
             ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (ModelNotFoundException $e) {
             // Handle order not found
             return response()->json([
