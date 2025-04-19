@@ -304,15 +304,23 @@ class OrderItemController extends Controller
                 ], 422);
             }
 
+            // Get the requested quantity and current quantity
+            $requestedQty = $request->input('quantity');
+            $currentQty = $orderItem->quantity;
+            $availableStock = $product->product_stock;
+
             // Check if the inventory is low
             $MINIMUM_STOCK_THRESHOLD = 5;
 
-            // If product is stock is low, prevent adding to order
-            if ($product->product_stock < $orderItem->quantity + $MINIMUM_STOCK_THRESHOLD) {
-                return response()->json([
-                    'message' => "{$product->product_name} stock is low, {$product->product_stock} left",
-                    'devMessage' => "PRODUCT_STOCK_LOW"
-                ], 422);
+            // If the stock is low
+            if ($availableStock < $currentQty + $MINIMUM_STOCK_THRESHOLD) {
+                // Return an error if the requested quantity is greater than the available stock, but if the requested quantity is less than the current quantity, allow it
+                if (!($requestedQty < $currentQty)) {
+                    return response()->json([
+                        'message' => "{$product->product_name} stock is low, only {$availableStock} left",
+                        'devMessage' => "PRODUCT_STOCK_LOW"
+                    ], 422);
+                }
             }
 
             // Check if the order is already cancelled
