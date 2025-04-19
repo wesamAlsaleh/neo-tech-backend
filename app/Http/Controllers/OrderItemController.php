@@ -284,8 +284,6 @@ class OrderItemController extends Controller
                 ], 404);
             }
 
-            // Check if the inventory is low
-            $MINIMUM_STOCK_THRESHOLD = 5;
 
             // Get the product by ID
             $product = Product::findOrFail($orderItem->product_id);
@@ -305,6 +303,9 @@ class OrderItemController extends Controller
                     'devMessage' => "PRODUCT_NOT_AVAILABLE"
                 ], 422);
             }
+
+            // Check if the inventory is low
+            $MINIMUM_STOCK_THRESHOLD = 5;
 
             // If product is stock is low, prevent adding to order
             if ($product->product_stock < $orderItem->quantity + $MINIMUM_STOCK_THRESHOLD) {

@@ -407,18 +407,18 @@ class OrderController extends Controller
             $totalPrice = $userCart->sum('price');
 
             // Format the shipping address
-            $shippingAddress = "Building number:{$userAddress->home_number}, Street number:{$userAddress->street_number}, Block number:{$userAddress->block_number} ,City:{$userAddress->city}";
+            $shippingAddress = "Building number:{$userAddress->home_number}, Street number:{$userAddress->street_number}, Block number:{$userAddress->block_number}, City:{$userAddress->city}";
+
+            // Initialize the minimum stock threshold
+            $MINIMUM_STOCK_THRESHOLD = 5;
 
             // Loop through the cart items and check if the product is in stock
             foreach ($userCart as $cartItem) {
                 // Get the product from the database
                 $product = Product::findOrFail($cartItem->product_id);
 
-                // Initialize the minimum stock threshold (checkout is allowed if stock is greater than this value)
-                $minimumStockThreshold = 5;
-
                 // Check if the product is is less than the minimum stock threshold
-                if ($product->product_stock < $minimumStockThreshold) {
+                if ($product->product_stock - $cartItem->quantity < $MINIMUM_STOCK_THRESHOLD) {
                     return response()->json([
                         'message' => "Product {$product->product_name} is out of stock, please remove it from your cart",
                         'devMessage' => 'OUT_OF_STOCK'
