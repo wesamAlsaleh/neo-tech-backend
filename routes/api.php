@@ -149,8 +149,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Order Item routes for admin
     Route::post('/admin/order-items/remove-item', [OrderItemController::class, 'removeOrderItem']); // remove order item from an order "Good"
-    Route::post('/admin/order-items/add-item', [OrderItemController::class, 'addOrderItem']); // add order item to an order ""
-    // Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
+    Route::post('/admin/order-items/add-item', [OrderItemController::class, 'addOrderItem']); // add order item to an order "Good"
+    Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
 
 });
 
