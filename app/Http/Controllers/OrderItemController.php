@@ -310,7 +310,7 @@ class OrderItemController extends Controller
             // If product is stock is low, prevent adding to order
             if ($product->product_stock < $orderItem->quantity + $MINIMUM_STOCK_THRESHOLD) {
                 return response()->json([
-                    'message' => "{$product->product_name} stock is low",
+                    'message' => "{$product->product_name} stock is low, {$product->product_stock} left",
                     'devMessage' => "PRODUCT_STOCK_LOW"
                 ], 422);
             }
