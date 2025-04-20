@@ -77,7 +77,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Order routes for authenticated user
     Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
     Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders for the authenticated user"Good"
-    Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id "Good"
+    Route::get('/order-details/{hashedID}', [OrderController::class, 'getUserOrderDetails']); // get order details by order hashed id "Good"
 });
 
 /**

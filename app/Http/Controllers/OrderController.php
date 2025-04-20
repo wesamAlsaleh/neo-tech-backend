@@ -538,8 +538,8 @@ class OrderController extends Controller
         }
     }
 
-    // Logic to get order details by order ID [for client]
-    public function getUserOrderDetails(int $id)
+    // Logic to get order details by order hashed ID [for client]
+    public function getUserOrderDetails(string $uuid)
     {
         try {
             // Get the authenticated user
@@ -555,7 +555,15 @@ class OrderController extends Controller
             // Find the order by ID
             $order = Order::with('orderItems')
                 ->where('user_id', $user->id)
-                ->findOrFail($id);
+                ->where('uuid', $uuid);
+
+            // Check if the order exists
+            if (!$order) {
+                return response()->json([
+                    'message' => 'Order not found',
+                    'devMessage' => 'ORDER_NOT_FOUND'
+                ], 404);
+            }
 
             // Make sure the user owns this order
             if ($order->user_id !== $user->id) {

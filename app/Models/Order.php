@@ -3,22 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-// This trait is used to generate UUIDs for the model
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
-    // This trait is used to generate UUIDs for the model
-    use HasUuids;
-
-    /**
-     * The attributes that will be appended to the model's array form.
-     *
-     * @var array
-     */
-    protected $appends = ['hashed_id'];
-
     /**
      * The attributes that are mass assignable.
      *
@@ -26,11 +14,22 @@ class Order extends Model
      */
     protected $fillable = [
         'user_id',
+        'uuid',
         'total_price',
         'status',
         'payment_method',
         'shipping_address',
     ];
+
+    // This will force the UUID to be generated before saving the model
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->uuid = Str::uuid(); // Generates a v4 UUID
+        });
+    }
 
     /**
      * Relationship: An order belongs to a user.
@@ -46,16 +45,5 @@ class Order extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    /**
-     * Accessor: Get the hashed ID of the order.
-     *
-     * @return string
-     */
-    public function getHashedIdAttribute()
-    {
-        // Return the hashed ID of the order
-        return hash('sha256', $this->id);
     }
 }
