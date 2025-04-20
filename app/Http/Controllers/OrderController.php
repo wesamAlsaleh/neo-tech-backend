@@ -497,7 +497,7 @@ class OrderController extends Controller
     }
 
     // Logic to get all the user orders without the items [for client] (with pagination)
-    public function getUserOrders()
+    public function getUserOrders(Request $request)
     {
         try {
             // Get the authenticated user
@@ -510,9 +510,20 @@ class OrderController extends Controller
                 ], 401);
             }
 
+            // Validate the request
+            $validated = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:15', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
+            ]);
+
             // Get the user's orders with pagination
             $orders = Order::where('user_id', $user->id)
-                ->paginate(10);
+                ->paginate(
+                    $validated['perPage'] ?? 10, // Default to 10 per page if not provided
+                    ['*'], // Get all columns
+                    '', // Custom pagination page name
+                    $validated['page'] ?? 1 // Default to page 1 if not provided
+                );
 
             return response()->json([
                 'message' => 'Orders fetched successfully',

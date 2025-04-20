@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Order routes for authenticated user
     Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
-    Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders by user id "Good"
+    Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders for the authenticated user"Good"
     Route::get('/order-details/{id}', [OrderController::class, 'getUserOrderDetails']); // get order details by order id "Good"
 });
 
@@ -131,9 +131,6 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // User Address routes for admin
     Route::delete('/delete-address', [UserAddressController::class, 'destroy']); // delete a user address "Good"
-
-    // Cart routes for admin
-    // TODO: add cart routes for admin
 
     // Order routes for admin
     Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
