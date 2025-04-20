@@ -555,7 +555,8 @@ class OrderController extends Controller
             // Find the order by ID
             $order = Order::with('orderItems')
                 ->where('user_id', $user->id)
-                ->where('uuid', $uuid);
+                ->where('uuid', $uuid)
+                ->firstOrFail(); // Throws 404 if not found
 
             // Check if the order exists
             if (!$order) {
