@@ -557,6 +557,14 @@ class OrderController extends Controller
                 ->where('user_id', $user->id)
                 ->findOrFail($id);
 
+            // Make sure the user owns this order
+            if ($order->user_id !== $user->id) {
+                return response()->json([
+                    'message' => 'You do not have permission to view this order',
+                    'devMessage' => 'UNAUTHORIZED_ACCESS'
+                ], 403);
+            }
+
             // Bring the order items with details
             $order->orderItems->each(function ($item) {
                 // Add product details to the order item
