@@ -512,7 +512,7 @@ class OrderController extends Controller
 
             // Validate the request
             $validated = $request->validate([
-                'perPage' => 'nullable|integer|min:1|max:15', // Number of products per page
+                'perPage' => 'nullable|integer|min:1|max:30', // Number of products per page
                 'page' => 'nullable|integer|min:1', // Number of the current page
             ]);
 
