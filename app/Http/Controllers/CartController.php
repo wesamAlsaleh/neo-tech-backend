@@ -31,6 +31,16 @@ class CartController extends Controller
             // Retrieve the user's cart items
             $cartItems = CartItem::where('user_id', $user->id)->get();
 
+            // Filter out inactive products in the cart
+            $cartItems = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            });
+
+            // Filter out checked out products in the cart
+            // $cartItems = $cartItems->filter(function ($item) {
+            //     return !$item->is_checked_out;
+            // });
+
             // Return a 204 No Content response if the cart is empty
             if ($cartItems->isEmpty()) {
                 return response()->json([
@@ -262,7 +272,7 @@ class CartController extends Controller
             // Check if the product is in stock
             if ($product->product_stock < $request->quantity) {
                 return response()->json([
-                    'message' => 'Product out of stock',
+                    'message' => "$product->product_name is out of stock",
                     'devMessage' => 'PRODUCT_OUT_OF_STOCK',
                 ], 400);
             }
@@ -385,7 +395,65 @@ class CartController extends Controller
     }
 
     /**
-     * Checkout the cart.
+     * TODO: Clear the cart.
      */
-    public function checkout() {}
+    public function clear() {}
+
+    /**
+     * Cart summary.
+     */
+    public function cartSummary()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            // Check if the user is authenticated
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                    'devMessage' => 'USER_NOT_AUTHENTICATED',
+                ], 401);
+            }
+
+            // Retrieve the user's cart items
+            $cartItems = CartItem::where('user_id', $user->id)->get();
+
+            //
+            $totalPrice = 0;
+
+            // Check if the cart is empty
+            if ($cartItems->isEmpty()) {
+                return response()->json([
+                    'message' => "Your cart is empty",
+                    "total_price" => $totalPrice,
+                ], 202);
+            }
+
+            // Filter out inactive products in the cart
+            $cartItems = $cartItems->filter(function ($product) {
+                return Product::where('id', $product->product_id)->where('is_active', true)->exists();
+            });
+
+            // Calculate the total price of the user's cart
+            foreach ($cartItems as $cartItem) {
+                $product = Product::find($cartItem->product_id);
+                if ($product) {
+                    $unitPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+                    $totalPrice += $unitPrice * $cartItem->quantity;
+                }
+            }
+
+            // Return the cart items
+            return response()->json([
+                'message' => 'Cart summary retrieved successfully',
+                "total_price" => $totalPrice,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving the cart summary',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

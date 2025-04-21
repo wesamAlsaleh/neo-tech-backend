@@ -5,10 +5,14 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Models\OrderItem;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,27 +45,39 @@ Route::get('/test', function () {
 |----------------------------------------------------------------------------------------
  */
 Route::middleware(['auth:sanctum'])->group(function () {
-    // Auth routes
+    // Auth routes for authenticated user
     Route::get('/user', [AuthController::class, 'user']); // get the authenticated user who is logged in "Good"
     Route::post('/logout', [AuthController::class, 'logout']); // logout the authenticated user who is logged in "Good"
     Route::get('/user-role', [AuthController::class, 'userRole']); // get the role of the authenticated user "Good"
+    Route::post('/update-user', [AuthController::class, 'updateProfile']); // update the authenticated user "Good"
+    Route::post('/update-password', [AuthController::class, 'changePassword']); // update the authenticated user password "Good"
 
-    // Product routes
+    // Product routes for authenticated user
     Route::post('/put-rating/{id}', [ProductController::class, 'putRating']); // add a rating to a product "Good"
 
-    // Wishlist routes
+    // Wishlist routes for authenticated user
     Route::get('/wishlist-products', [WishlistController::class, 'index']); // get the authenticated user's wishlist "Good"
     Route::post('/add-wishlist-product', [WishlistController::class, 'store']); // add a product to the wishlist using the product id "Good"
     Route::delete('/clear-wishlist/{id}', [WishlistController::class, 'destroy']); // remove a product from the wishlist using the wishlist id "Good"
     Route::delete('/remove-wishlist-product/{id}', [WishlistController::class, 'removeWishlistProduct']); // remove a product from the wishlist using the product id "Good"
     Route::post('/move-to-cart', [WishlistController::class, 'moveToCart']); // move a product from the wishlist to the cart using the product id ""
 
-    // Cart routes
+    // Cart routes for authenticated user
     Route::get('/cart', [CartController::class, 'index']); // View cart items "Good"
-    Route::post('/cart', [CartController::class, 'store']); // Add item to cart ""
-    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity ""
-    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart ""
-    Route::post('/cart/checkout', [CartController::class, 'checkout']); // Checkout cart ""
+    Route::post('/cart', [CartController::class, 'store']); // Add item to cart "Good"
+    Route::post('/cart/{cartItemId}', [CartController::class, 'update']); // Update cart item quantity "Good"
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'destroy']); // Remove item from cart "Good"
+    Route::get('/cart/summary', [CartController::class, 'cartSummary']); // View cart summary "Good"
+
+
+    // User Address routes for authenticated user
+    Route::post('/add-address', [UserAddressController::class, 'create']); // Create a new user address "Good"
+    Route::post('/update-address', [UserAddressController::class, 'update']); // Update a user address "Good"
+
+    // Order routes for authenticated user
+    Route::post('/checkout', [OrderController::class, 'checkout']); // Checkout cart "Good"
+    Route::get('/user-orders', [OrderController::class, 'getUserOrders']); // get all orders for the authenticated user"Good"
+    Route::get('/order-details/{uuid}', [OrderController::class, 'getUserOrderDetails']); // get order details by uuid "Good"
 });
 
 /**
@@ -87,7 +103,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/toggle-product-sale/{id}', [ProductController::class, 'putProductOnSale']); // put a product on sale by id "Good"
     Route::post('/admin/toggle-product-sale-off/{id}', [ProductController::class, 'removeProductFromSale']); // put a product off sale by id "Good"
     Route::get('/admin/sale-products', [ProductController::class, 'getProductsOnSale']); // get all products "Good"
-    Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale ""
+    Route::post('/admin/remove-all-products-from-sale', [ProductController::class, 'removeAllProductsFromSale']); // remove all products from sale "Good"
+    Route::get('/admin/products/search', [ProductController::class, 'searchProduct']); // search products by name or barcode or category "Good"
+
 
     // Trust Badge routes for admin
     Route::get('/admin/features', [ShopFeatureController::class, 'index']); // get all shop features "Good"
@@ -111,6 +129,26 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::patch('/admin/toggle-image-status/{id}', [ImageController::class, 'toggleImageActivity']); // toggle image status by id "Good"
     Route::patch('/admin/toggle-image-visibility/{id}', [ImageController::class, 'toggleImageVisibility']); // toggle image visibility by id "Good"
 
+    // User Address routes for admin
+    Route::delete('/delete-address', [UserAddressController::class, 'destroy']); // delete a user address "Good"
+
+    // Order routes for admin
+    Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
+    // TODO: Merge the following 3 routes into one route
+    Route::put('/admin/pending-order/{id}', [OrderController::class, 'setOrderStatusToPending']); // update order status by id to pending "Good"
+    Route::put('/admin/completed-order/{id}', [OrderController::class, 'setOrderStatusToCompleted']); // update order status by id to completed "Good"
+    Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
+
+    Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
+    Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
+    Route::get('/admin/orders-by-status/{status}', [OrderController::class, 'getOrdersByStatus']); // get all orders by status "Good"
+    Route::post('/admin/update-order', [OrderController::class, 'updateOrderDetails']); // update order details "Good"
+
+    // Order Item routes for admin
+    Route::post('/admin/order-items/remove-item', [OrderItemController::class, 'removeOrderItem']); // remove order item from an order "Good"
+    Route::post('/admin/order-items/add-item', [OrderItemController::class, 'addOrderItem']); // add order item to an order "Good"
+    Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
+
 });
 
 /**
@@ -121,6 +159,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/forgot-password', [AuthController::class, 'forgotPassword']); // send a password reset link to the user's email ""
+// Route::post('/reset-password', [AuthController::class, 'resetPassword']); // reset the user's password ""
 
 // Category routes
 Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"

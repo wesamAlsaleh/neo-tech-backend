@@ -17,20 +17,23 @@ use Illuminate\Support\Facades\Log;
 class ProductController extends Controller
 {
 
-    // Get all products
+    // Get all products (with pagination)
     public function getAllProducts(Request $request): JsonResponse
     {
         try {
             // Validate the request
-            $request->validate([
-                'page' => 'integer|min:1', // Ensure the page number is an integer and greater than 0
+            $validated = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:15', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
             ]);
 
-            // Get the page number from the request eg. /best-selling-products?page=1
-            $request->query('page') ?? 1; // Default to page 1 if not provided or invalid
-
             // Get all products with pagination
-            $products = Product::paginate(10); // get all products with pagination (10 products per page)
+            $products = Product::paginate(
+                $validated['perPage'] ?? 10, // Default to 10 per page if not provided
+                ['*'], // Get all columns
+                'flashSaleProducts', // Custom pagination page name
+                $validated['page'] ?? 1 // Default to page 1 if not provided
+            );
 
             // If no products were found, return an empty array
             if ($products->isEmpty()) {
@@ -43,12 +46,16 @@ class ProductController extends Controller
             // Return the products
             return response()->json([
                 'message' => 'Products retrieved successfully',
-                'products' => $products->items(), // Return only the products on the current page
-                'pagination' => [
-                    'current_page' => $products->currentPage(), // The current page number
-                    'total_pages' => $products->lastPage(), // The last page number
-                ]
+                'products' => $products,
             ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             // Log the actual error for debugging
             Log::error('Error fetching products: ' . $e->getMessage());
@@ -584,6 +591,42 @@ class ProductController extends Controller
             return response()->json([
                 'message' => "Failed to fetch products on sale",
                 'developerMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Search product by name, barcode
+    public function searchProduct(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'query' => 'nullable|string|max:255', // Ensure the query is a string and not empty
+            ]);
+
+            $query = $request->input('query');
+
+            // Search for products where the name starts with the query
+            $products = Product::where('product_name', 'like', "{$query}%") // Starts with `q`
+                ->orWhere('product_barcode', 'like', "%{$query}%") // Or by barcode == `q`
+                ->get();
+
+            return response()->json([
+                'results' => $products,
+                'items_count' => $products->count(),
+            ], 200);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to search for the product',
+                'devMessage' => $e->getMessage()
             ], 500);
         }
     }
