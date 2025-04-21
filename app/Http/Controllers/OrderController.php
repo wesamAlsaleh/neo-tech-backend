@@ -466,7 +466,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'message' => "Your order with ID {$order->id} has been created successfully, your order now is {$order->status} and will be shipped to {$shippingAddress}",
-                'order_id' => $order->id,
+                'order_uuid' => $order->uuid,
                 'total_price' => $order->total_price,
                 'shipping_address' => $order->shipping_address,
                 'payment_method' => $order->payment_method,
@@ -518,6 +518,7 @@ class OrderController extends Controller
 
             // Get the user's orders with pagination
             $orders = Order::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc') // Order by created_at in descending order
                 ->paginate(
                     $validated['perPage'] ?? 10, // Default to 10 per page if not provided
                     ['*'], // Get all columns
@@ -538,7 +539,7 @@ class OrderController extends Controller
         }
     }
 
-    // Logic to get order details by order hashed ID [for client]
+    // Logic to get order details by order UUID [for client]
     public function getUserOrderDetails(string $uuid)
     {
         try {
@@ -556,6 +557,7 @@ class OrderController extends Controller
             $order = Order::with('orderItems')
                 ->where('user_id', $user->id)
                 ->where('uuid', $uuid)
+                ->with('orderItems')
                 ->firstOrFail(); // Throws 404 if not found
 
             // Check if the order exists
