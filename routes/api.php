@@ -149,7 +149,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Dashboard routes for admin
     Route::get('/admin/total-users', [DashboardController::class, 'getTotalUser']); // get total users ""
-    Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get total orders ""
+    Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
 
 });
 

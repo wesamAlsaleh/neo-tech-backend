@@ -68,14 +68,14 @@ class DashboardController extends Controller
         }
     }
 
-    // Logic to get last 8 orders
+    // Logic to get last 10 orders
     public function getLatestOrders()
     {
         try {
             // Fetch the latest 8 orders
             $latestOrders = Order::with(['user:id,first_name,last_name,email'])
                 ->orderBy('created_at', 'desc')
-                ->take(8)
+                ->take(10)
                 ->get();
 
             return response()->json([
