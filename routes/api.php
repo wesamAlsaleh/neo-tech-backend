@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\OrderController;
@@ -134,10 +135,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Order routes for admin
     Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
-    // TODO: Merge the following 3 routes into one route
-    Route::put('/admin/pending-order/{id}', [OrderController::class, 'setOrderStatusToPending']); // update order status by id to pending "Good"
-    Route::put('/admin/completed-order/{id}', [OrderController::class, 'setOrderStatusToCompleted']); // update order status by id to completed "Good"
-    Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
+    Route::post('/admin/change-order-status/{id}', [OrderController::class, 'setOrderStatus']); // update order status by id to specified status "Good"
 
     Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
     Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
@@ -148,6 +146,10 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/order-items/remove-item', [OrderItemController::class, 'removeOrderItem']); // remove order item from an order "Good"
     Route::post('/admin/order-items/add-item', [OrderItemController::class, 'addOrderItem']); // add order item to an order "Good"
     Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
+
+    // Dashboard routes for admin
+    Route::get('/admin/total-users', [DashboardController::class, 'getTotalUser']); // get total users ""
+    Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get total orders ""
 
 });
 
