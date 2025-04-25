@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Console\Command;
 
 class CheckSaleEndDate extends Command
@@ -53,6 +54,18 @@ class CheckSaleEndDate extends Command
             ]);
 
             // Log::info('Product ID: ' . $product->id . ' updated successfully.');
+
+            // Add performance log
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "Product ID {$product->id} is no longer on sale.",
+                'context' => json_encode([
+                    'product_id' => $product->id,
+                    'sale_end' => $product->sale_end,
+                ]),
+                'user_id' => null, // Assuming this is a system-level action, no user is associated
+                'status_code' => 200, // Assuming success
+            ]);
         }
 
         // Log completion message
