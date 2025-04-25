@@ -102,7 +102,7 @@ class OrderController extends Controller
             $order->save();
 
             return response()->json([
-                'message' => "Order with ID {$id} status updated to {$order->status} successfully.",
+                'message' => "Order with ID {$id} status updated to ({$order->status}) successfully.",
             ]);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
