@@ -47,7 +47,7 @@ class ActivateFlashSale extends Command
                 // Add performance log
                 SystemPerformanceLog::create([
                     'log_type' => 'info',
-                    'message' => "Flash sale with ID {$flashSale->name} has been activated.",
+                    'message' => "{$flashSale->name} has been activated.",
                     'context' => json_encode([
                         'flash_sale_id' => $flashSale->id,
                         'start_date' => $flashSale->start_date,

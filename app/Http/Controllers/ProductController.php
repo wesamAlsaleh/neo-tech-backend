@@ -458,6 +458,15 @@ class ProductController extends Controller
                 'sale_end' => $validated['sale_end'],
             ]);
 
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is now on sale",
+                'context' => json_encode($product),
+                'user_id' => null, // Assuming this is a system-level action, no user is associated
+                'status_code' => 200,
+            ]);
+
             // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} is now on sale, the discount is {$product->discount}% and the sale starts on {$product->sale_start} and the sale ends on {$product->sale_end}, the sale duration is {$product->sale_duration} days.",
@@ -503,6 +512,15 @@ class ProductController extends Controller
                 'sale_start' => null,
                 'sale_end' => null,
                 'product_price_after_discount' => 0,
+            ]);
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is no longer on sale",
+                'context' => json_encode($product),
+                'user_id' => null, // Assuming this is a system-level action, no user is associated
+                'status_code' => 200,
             ]);
 
             // Return the updated product

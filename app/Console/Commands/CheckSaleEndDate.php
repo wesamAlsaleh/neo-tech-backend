@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Product;
 use App\Models\SystemPerformanceLog;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class CheckSaleEndDate extends Command
 {
@@ -33,9 +34,8 @@ class CheckSaleEndDate extends Command
         // Log the current time for debugging
         // Log::info('Running sale end date check at: ' . $now);
 
-        // Get all products where onSale is true and sale_end has passed
+        // Get all products where onSale is true
         $products = Product::where('onSale', true)
-            ->where('sale_end', '<', $now)
             ->get();
 
         // Log the number of products found for debugging
@@ -45,27 +45,33 @@ class CheckSaleEndDate extends Command
         foreach ($products as $product) {
             // Log::info('Updating product ID: ' . $product->id . ' - Sale end: ' . $product->sale_end);
 
-            $product->update([
-                'onSale' => false,
-                'discount' => 0,
-                'sale_start' => null,
-                'sale_end' => null,
-                'product_price_after_discount' => 0,
-            ]);
+            // Check if the sale end date has passed
+            if ($product->sale_end && $product->sale_end < $now) {
+                // Log::info('Sale end date has passed for product ID: ' . $product->id);
+
+                // Update the product to set onSale to false and reset other attributes
+                $product->update([
+                    'onSale' => false,
+                    'discount' => 0,
+                    'sale_start' => null,
+                    'sale_end' => null,
+                    'product_price_after_discount' => 0,
+                ]);
+
+                // Add performance log
+                SystemPerformanceLog::create([
+                    'log_type' => 'info',
+                    'message' => "Product ID {$product->id} is no longer on sale.",
+                    'context' => null, // Assuming no additional context is needed
+                    'user_id' => null, // Assuming this is a system-level action, no user is associated
+                    'status_code' => 200, // Assuming success
+                ]);
+            } else {
+                // Log::info('Sale end date is still valid for product ID: ' . $product->id);
+                continue; // Skip to the next product if the sale end date is still valid
+            }
 
             // Log::info('Product ID: ' . $product->id . ' updated successfully.');
-
-            // Add performance log
-            SystemPerformanceLog::create([
-                'log_type' => 'info',
-                'message' => "Product ID {$product->id} is no longer on sale.",
-                'context' => json_encode([
-                    'product_id' => $product->id,
-                    'sale_end' => $product->sale_end,
-                ]),
-                'user_id' => null, // Assuming this is a system-level action, no user is associated
-                'status_code' => 200, // Assuming success
-            ]);
         }
 
         // Log completion message
