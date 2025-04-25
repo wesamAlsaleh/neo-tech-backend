@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class DashboardController extends Controller
 {
-    // Logic to get total user per specific time (daily, weekly, monthly)
+    // TODO: Logic to get total user per specific time (daily, weekly, monthly)
     public function getTotalUser(Request $request)
     {
         try {
@@ -93,11 +94,15 @@ class DashboardController extends Controller
     public function getSystemPerformanceLogs()
     {
         try {
-            // Fetch the system performance logs
-            $performanceLogs = DB::table('system_performance_logs')
-                ->orderBy('created_at', 'desc')
+            // Fetch latest 15 system performance logs
+            $performanceLogs = SystemPerformanceLog::orderBy('created_at', 'desc')
                 ->take(10)
                 ->get();
+
+            // Format the logs to include user information
+            foreach ($performanceLogs as $log) {
+                $log->user = $log->user()->select('id', 'first_name', 'last_name', 'email')->first();
+            }
 
             return response()->json([
                 'performance_logs' => $performanceLogs,

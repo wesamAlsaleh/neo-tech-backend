@@ -463,7 +463,7 @@ class ProductController extends Controller
                 'log_type' => 'info',
                 'message' => "{$product->product_name} is now on sale",
                 'context' => json_encode($product),
-                'user_id' => null, // Assuming this is a system-level action, no user is associated
+                'user_id' => $request->user()->id,
                 'status_code' => 200,
             ]);
 
@@ -491,7 +491,7 @@ class ProductController extends Controller
     }
 
     // Remove a product from sale
-    public function removeProductFromSale(String $id): JsonResponse
+    public function removeProductFromSale(String $id, Request $request): JsonResponse
     {
         try {
             // Find the product
@@ -519,7 +519,7 @@ class ProductController extends Controller
                 'log_type' => 'info',
                 'message' => "{$product->product_name} is no longer on sale",
                 'context' => json_encode($product),
-                'user_id' => null, // Assuming this is a system-level action, no user is associated
+                'user_id' => $request->user()->id,
                 'status_code' => 200,
             ]);
 
