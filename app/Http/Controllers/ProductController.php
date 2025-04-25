@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -194,7 +195,14 @@ class ProductController extends Controller
                 'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
             ]);
 
-
+            // Add performance log
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "Product {$product->product_name} created successfully",
+                'context' => json_encode($product),
+                'user_id' => $request->user()->id,
+                'status_code' => 201,
+            ]);
 
             // Return the product
             return response()->json([
@@ -202,9 +210,12 @@ class ProductController extends Controller
                 'productData' => $product->load('category')
             ], 201);
         } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
             return response()->json([
-                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
-                'errors' => $e->errors()
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json(

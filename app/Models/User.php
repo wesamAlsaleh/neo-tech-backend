@@ -75,4 +75,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
+
+    /**
+     * Relationship: A user can have many Logs.
+     */
+    public function logs()
+    {
+        return $this->hasMany(SystemPerformanceLog::class);
+    }
 }

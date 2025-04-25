@@ -88,4 +88,25 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    // Logic to get system performance logs
+    public function getSystemPerformanceLogs()
+    {
+        try {
+            // Fetch the system performance logs
+            $performanceLogs = DB::table('system_performance_logs')
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get();
+
+            return response()->json([
+                'performance_logs' => $performanceLogs,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching the system performance logs.',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
