@@ -148,7 +148,15 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
 
     // Dashboard routes for admin
-    Route::get('/admin/total-users', [DashboardController::class, 'getTotalUser']); // get total users ""
+    Route::get('/admin/pending-orders-count', [DashboardController::class, 'getTotalPendingOrders']); // get total pending orders "Good"
+    Route::get('/admin/todays-orders', [DashboardController::class, 'getTotalOrdersToday']); // get total orders for today "Good"
+    Route::get('/admin/products-inventory-status', [DashboardController::class, 'getProductsInventoryStatus']); // get products inventory status "Good"
+    Route::get('/admin/total-users', [DashboardController::class, 'getTotalUsers']); // get total users "Good"
+    Route::get('/admin/this-month-revenue', [DashboardController::class, 'getTotalRevenueOfMonth']); // get total revenue of the month "Good"
+    Route::get('/admin/signup-statistics', [DashboardController::class, 'getUserSignupStatistics']); // get user signup statistics "Good"
+    Route::get('/admin/monthly-revenue', [DashboardController::class, 'getMonthlyRevenueStatistics']); // get monthly revenue statistics "Good"
+    Route::get('/admin/most-viewed-products', [DashboardController::class, 'getMostViewedProducts']); // get most viewed products "Good"
+
     Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
     Route::get('/admin/system-performance-logs', [DashboardController::class, 'getSystemPerformanceLogs']); // get system performance logs "Good"
 });
