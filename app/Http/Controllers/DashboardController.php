@@ -278,4 +278,60 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    // Logic for global search
+    public function globalSearch(Request $request)
+    {
+        try {
+            // Validate the search term
+            $request->validate([
+                "query" => "required|string|min:1|max:255",
+            ]);
+
+            // Get the search term
+            $searchTerm = $request->input('query');
+
+            // Perform the search across multiple models
+            $users = User::where('first_name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('email', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%")
+                ->get();
+
+            $orders = Order::where('uuid', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('user_id', $searchTerm) // exact match
+                ->orWhere('id', $searchTerm) // exact match
+                ->get();
+
+            $products = Product::where('product_name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('slug', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('product_barcode', 'LIKE', "%{$searchTerm}%")
+                ->get();
+
+            return response()->json([
+                'message' => "Search results for: {$searchTerm}",
+                'counts' => [
+                    'users' => count($users),
+                    'orders' => count($orders),
+                    'products' => count($products),
+                ],
+                'users' => $users,
+                'orders' => $orders,
+                'products' => $products,
+            ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while performing the global search.',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

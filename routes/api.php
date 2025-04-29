@@ -156,9 +156,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/signup-statistics', [DashboardController::class, 'getUserSignupStatistics']); // get user signup statistics "Good"
     Route::get('/admin/monthly-revenue', [DashboardController::class, 'getMonthlyRevenueStatistics']); // get monthly revenue statistics "Good"
     Route::get('/admin/most-viewed-products', [DashboardController::class, 'getMostViewedProducts']); // get most viewed products "Good"
-
     Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
     Route::get('/admin/system-performance-logs', [DashboardController::class, 'getSystemPerformanceLogs']); // get system performance logs "Good"
+    Route::post('/admin/global-search', [DashboardController::class, 'globalSearch']); // global search ""
 });
 
 /**
