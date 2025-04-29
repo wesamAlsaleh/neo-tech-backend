@@ -368,6 +368,15 @@ class ProductController extends Controller
             // Soft delete the product (sets 'deleted_at' to the current timestamp)
             $product->delete();
 
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} soft deleted successfully",
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
+            ]);
+
             // Return a success message
             return response()->json([
                 'message' => "{$product->product_name} deleted successfully"
@@ -391,6 +400,15 @@ class ProductController extends Controller
 
             // Restore the product
             $product->restore();
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} restored successfully",
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
+            ]);
 
             // Return a success message
             return response()->json([
@@ -704,46 +722,6 @@ class ProductController extends Controller
         }
     }
 
-    // Search for products by rating
-    public function searchProductsByRating($rating): JsonResponse
-    {
-        try {
-            // Check if the rating is within the range 0-5
-            if ($rating < 0 || $rating > 5) {
-                return response()->json(['message' => 'Rating must be between 0 and 5'], 400);
-            }
-
-            // Search for products where the rating is equal to the search term
-            $products = Product::where('product_rating', $rating)->get(); // get all products that match the search term
-
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
-            }
-
-            // Transform the products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
-
-                // Return the product
-                return $product;
-            });
-
-            // Return the products
-            return response()->json($productsWithImages, 200);
-        } catch (ModelNotFoundException) {
-            return response()->json(['message' => 'No products found'], 404);
-        } catch (QueryException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
-
     // Search for products by price range
     public function searchProductsByPriceRange($minPrice, $maxPrice): JsonResponse
     {
@@ -873,6 +851,15 @@ class ProductController extends Controller
             // Toggle the status of the product
             $product->update([
                 'is_active' => !$product->is_active
+            ]);
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is now " . ($product->is_active ? 'active' : 'inactive'),
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
             ]);
 
             // Return the updated product
