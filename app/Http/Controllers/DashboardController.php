@@ -301,6 +301,7 @@ class DashboardController extends Controller
             $orders = Order::where('uuid', 'LIKE', "%{$searchTerm}%")
                 ->orWhere('user_id', $searchTerm) // exact match
                 ->orWhere('id', $searchTerm) // exact match
+                ->with('user:id,first_name,last_name,email')
                 ->get();
 
             $products = Product::where('product_name', 'LIKE', "%{$searchTerm}%")
