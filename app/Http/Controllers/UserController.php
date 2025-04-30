@@ -12,15 +12,9 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            // Validate the request
-            $validated = $request->validate([
-                'perPage' => 'nullable|integer|min:1|max:50', // Number of products per page
-                'page' => 'nullable|integer|min:1', // Number of the current page
-            ]);
-
-            // Get the current page and items per page from the request
-            $currentPage = $request->input('page') ?? 1; // Default to page 1 if not provided
-            $perPage = $request->input('perPage') ?? 10; // Default to 10 items per page if not provided
+            //  Get the current page and per page from the url query parameters
+            $currentPage = $request->query('page', 1); // Default to page 1 if not provided
+            $perPage = $request->query('per_page', 10); // Default to 10 per page if not provided
 
             // Fetch users from the database with pagination
             $users = User::paginate(
