@@ -162,7 +162,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/global-search', [DashboardController::class, 'globalSearch']); // global search "Good"
 
     // User routes for admin
-    Route::get('/admin/users', [UserController::class, 'index']); // get all users ""
+    Route::get('/admin/users', [UserController::class, 'index']); // get all users "Good"
+    Route::get('/admin/user/{id}', [UserController::class, 'show']); // get a single user by id "Good"
+
 });
 
 /**
