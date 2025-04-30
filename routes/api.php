@@ -11,6 +11,7 @@ use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
 use App\Http\Controllers\UserAddressController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\OrderItem;
@@ -158,7 +159,10 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/most-viewed-products', [DashboardController::class, 'getMostViewedProducts']); // get most viewed products "Good"
     Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
     Route::get('/admin/system-performance-logs', [DashboardController::class, 'getSystemPerformanceLogs']); // get system performance logs "Good"
-    Route::post('/admin/global-search', [DashboardController::class, 'globalSearch']); // global search ""
+    Route::post('/admin/global-search', [DashboardController::class, 'globalSearch']); // global search "Good"
+
+    // User routes for admin
+    Route::get('/admin/users', [UserController::class, 'index']); // get all users ""
 });
 
 /**
