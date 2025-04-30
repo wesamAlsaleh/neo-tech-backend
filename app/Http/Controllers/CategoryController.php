@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,16 +50,31 @@ class CategoryController extends Controller
                 'category_image' => $imageName, // Can be null if no image is uploaded
             ]);
 
+            // Add performance log
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$category->category_name} category created successfully",
+                'context' => json_encode($category),
+                'user_id' => $request->user()->id,
+                'status_code' => 201,
+            ]);
+
             // Return JSON response
             return response()->json([
                 'message' => "{$category->category_name} category created successfully",
-                // 'request' => $request->all(),
-                // 'category' => $category
             ], 201);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred while creating the category. Please try again later.',
-                'errorMessage' => $e->getMessage()
+                'message' => 'An error occurred while performing the global search.',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -67,9 +83,6 @@ class CategoryController extends Controller
     public function getAllCategories()
     {
         try {
-            // TODO: Add Pagination
-            // $categories = Category::paginate(10); // 10 categories per page
-
             // Fetch all categories from the database
             $categories = Category::all();
 
@@ -81,11 +94,6 @@ class CategoryController extends Controller
                     $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
                 } else {
                     $category->category_image_url = null; // Optional: Handle categories with no image
-
-                    // TODO: Add placeholder image URL if no image is available
-                    // $category->category_image_url = $category->category_image
-                    //     ? asset('storage/images/categories_images/' . $category->category_image)
-                    //     : asset('images/default-category-placeholder.jpg');
                 }
 
                 return $category;
@@ -161,9 +169,12 @@ class CategoryController extends Controller
                 'category' => $category,
             ], 200);
         } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
             return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
             ], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -171,8 +182,8 @@ class CategoryController extends Controller
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred while updating the category',
-                'error' => $e->getMessage(),
+                'message' => 'An error occurred while performing the global search.',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }
@@ -219,7 +230,7 @@ class CategoryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while deleting the category. Please try again later.',
-                'errorMessage' => $e->getMessage()
+                'devMessage' => $e->getMessage()
             ], 500);
         }
     }
@@ -254,10 +265,9 @@ class CategoryController extends Controller
                 'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
             ], 200);
         } catch (\Exception $e) {
-            // TODO: Error handling is not good right now
             return response()->json([
                 'message' => 'An error occurred while updating the category status. Please try again later.',
-                'errorMessage' => $e->getMessage()
+                'devMessage' => $e->getMessage()
             ], 500);
         }
     }
