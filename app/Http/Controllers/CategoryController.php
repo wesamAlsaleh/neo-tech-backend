@@ -260,6 +260,15 @@ class CategoryController extends Controller
             $category->is_active = !$category->is_active;
             $category->save();
 
+            // Add performance log
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$category->category_name} category status updated successfully",
+                'context' => json_encode($category),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
+            ]);
+
             // Return JSON response
             return response()->json([
                 'message' => $category->category_name . ' is ' . ($category->is_active ? 'active' : 'inactive'),
