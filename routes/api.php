@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WishlistController;
@@ -165,6 +166,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/users', [UserController::class, 'index']); // get all users "Good"
     Route::get('/admin/user/{id}', [UserController::class, 'show']); // get a single user by id "Good"
     Route::post('/admin/update-user/{id}', [UserController::class, 'update']); // update a user by id "Good"
+
+    // Statistics routes for admin
+    Route::get('/admin/products-statistics', [StatisticsController::class, 'getAllProductsWithStatistics']); // get all products with their statistics "Good"
 
 });
 
