@@ -204,3 +204,6 @@ Route::get('/display-active-flash-sale', [FlashSaleController::class, 'display']
 
 // Image Slider routes
 Route::get('/display-slider-images', [ImageController::class, 'display']); // get the active images "Good"
+
+// Products Search routes
+Route::post('/search-products', [ProductController::class, 'searchProducts']); // search products by name "Good"

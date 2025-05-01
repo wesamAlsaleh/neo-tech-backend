@@ -1033,4 +1033,44 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    // Logic to globally search for products
+    public function searchProducts(Request $request)
+    {
+        try {
+            // Validate the search term
+            $request->validate([
+                "query" => "required|string|min:1|max:255",
+            ]);
+
+            // Get the search term
+            $searchTerm = $request->input('query');
+
+            // Perform the search across the model
+
+            $products = Product::where('product_name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('slug', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('product_barcode', 'LIKE', "%{$searchTerm}%")
+                ->get();
+
+            return response()->json([
+                'message' => "Search results for: {$searchTerm}",
+                'products_count' => count($products),
+                'products' => $products,
+            ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while performing the global search.',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
