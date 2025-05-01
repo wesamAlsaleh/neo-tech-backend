@@ -164,6 +164,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     // User routes for admin
     Route::get('/admin/users', [UserController::class, 'index']); // get all users "Good"
     Route::get('/admin/user/{id}', [UserController::class, 'show']); // get a single user by id "Good"
+    Route::post('/admin/update-user/{id}', [UserController::class, 'update']); // update a user by id "Good"
 
 });
 
