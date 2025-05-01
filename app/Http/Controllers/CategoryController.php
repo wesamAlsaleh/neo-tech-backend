@@ -41,11 +41,16 @@ class CategoryController extends Controller
                 $request->file('category_image')->storeAs('images/categories_images', $imageName, 'public');
             }
 
+            // If description is not provided, set it to default value
+            if (empty($request->category_description)) {
+                $defaultDescription = 'No description provided';
+            }
+
             // Save category in the database
             $category = Category::create([
                 'category_name' => $request->category_name,
                 'category_slug' => $slug,
-                'category_description' => $request->category_description,
+                'category_description' => $request->category_description ?? $defaultDescription,
                 'is_active' => false, // Default to false
                 'category_image' => $imageName, // Can be null if no image is uploaded
             ]);
