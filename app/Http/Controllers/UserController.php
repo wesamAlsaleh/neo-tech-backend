@@ -53,10 +53,12 @@ class UserController extends Controller
             // Fetch user from the database by ID
             $user = User::findOrFail($id);
 
+            // Bring the user orders
+            $user->load('orders');
+
             return response()->json([
                 'message' => 'User retrieved successfully',
                 'user' => $user,
-                'user_orders' => $user->orders,
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
