@@ -1038,16 +1038,15 @@ class ProductController extends Controller
     public function searchProducts(Request $request)
     {
         try {
-            // Validate the search term
+            // Validate the request
             $request->validate([
-                "query" => "required|string|min:1|max:255",
+                'query' => 'required|string|max:255', // Ensure the query is a string and not empty
             ]);
 
-            // Get the search term
+            // Get the search term from the url
             $searchTerm = $request->input('query');
 
-            // Perform the search across the model
-
+            // Perform the search across the product model
             $products = Product::where('product_name', 'LIKE', "%{$searchTerm}%")
                 ->orWhere('slug', 'LIKE', "%{$searchTerm}%")
                 ->orWhere('product_barcode', 'LIKE', "%{$searchTerm}%")
