@@ -14,6 +14,12 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
+            // Validate the request data
+            $request->validate([
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:100',
+            ]);
+
             //  Get the current page and per page from the url query parameters
             $currentPage = $request->query('page', 1); // Default to page 1 if not provided
             $perPage = $request->query('per_page', 10); // Default to 10 per page if not provided
@@ -185,6 +191,40 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'An error occurred while updating the user.',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Logic to get all admin users
+    public function getAdmins(Request $request)
+    {
+        try {
+            // Validate the request data
+            $request->validate([
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:100',
+            ]);
+
+            //  Get the current page and per page from the url query parameters
+            $currentPage = $request->query('page', 1); // Default to page 1 if not provided
+            $perPage = $request->query('per_page', 10); // Default to 10 per page if not provided
+
+            // Fetch admin users from the database
+            $admins = User::where('role', 'admin')->paginate(
+                $perPage, // Default to 10 per page if not provided
+                ['*'], // Get all columns
+                'users_index', // Custom pagination page name
+                $currentPage // Default to page 1 if not provided
+            );
+
+            return response()->json([
+                'message' => 'Admins retrieved successfully',
+                'admins' => $admins,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while retrieving the admins.',
                 'devMessage' => $e->getMessage(),
             ], 500);
         }

@@ -22,7 +22,7 @@ class StatisticsController extends Controller
             $perPage = $request->input('per_page', 10);
 
             // Get all products from the database
-            $products = Product::orderBy('product_name', 'asc')
+            $products = Product::orderBy('product_view', 'desc')
                 ->select([
                     'product_name',
                     'product_rating',
