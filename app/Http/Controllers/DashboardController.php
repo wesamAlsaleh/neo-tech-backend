@@ -126,29 +126,29 @@ class DashboardController extends Controller
     public function getMonthlyUserSignupStatistics()
     {
         try {
-            // Start date: 12 weeks ago from today (aligned to Monday)
-            $startDate = Carbon::now()->subWeeks(12)->startOfWeek();
-
             // Initialize an array to hold the user signup data for each week
             $growthData = [];
 
             // Loop through the last 12 weeks
-            for ($i = 0; $i < 12; $i++) {
-                // Start of the current week
-                $weekStart = $startDate->copy()->addWeeks($i);
+            for ($i = 0; $i < 6; $i++) {
+                // Get the current date and subtract months
+                $date = Carbon::now()->subMonths($i); // 0 - 5, means current month and previous 6 months
 
-                // Start of the next week (used as end boundary)
-                $weekEnd = $weekStart->copy()->addWeek(); // Next week's start
+                $startDate = $date->copy()->startOfMonth(); // Start of the month
+                $endDate = $date->copy()->endOfMonth(); // End of the month
 
                 // Count users who signed up between weekStart and weekEnd
-                $growth = User::whereBetween('created_at', [$weekStart, $weekEnd])->count();
+                $growth = User::whereBetween('created_at', [$startDate, $endDate])->count();
 
                 // Format the week as "dd-mm-yyyy"
                 $growthData[] = [
                     'growth' => $growth,
-                    'week' => $weekStart->format('d-m-Y'),
+                    'month' => $date->format('F Y'), // e.g. "January 2023"
                 ];
             }
+
+            // Reverse the array so it shows from oldest to newest (current month first, on the right)
+            $growthData = array_reverse($growthData);
 
             return response()->json([
                 'growth_data' => $growthData,
