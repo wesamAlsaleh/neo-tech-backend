@@ -122,8 +122,8 @@ class DashboardController extends Controller
         }
     }
 
-    // Logic to get user signup statistics in the last 3 months
-    public function getUserSignupStatistics()
+    // Logic to get user signup statistics (chart)
+    public function getMonthlyUserSignupStatistics()
     {
         try {
             // Start date: 12 weeks ago from today (aligned to Monday)
@@ -161,36 +161,67 @@ class DashboardController extends Controller
         }
     }
 
-    // Logic to get monthly revenue statistics and compare with last month
+    // Logic to get monthly revenue statistics (chart)
     public function getMonthlyRevenueStatistics()
     {
         try {
-            // Get today's date
-            $today = Carbon::now();
-
-            // Initialize an array to hold the revenue data for the last 8 weeks
+            // Initialize an array to hold the revenue data
             $revenue = [];
 
-            // Loop through the last 8 weeks (Loop from 7 weeks ago to this week (for ascending order))
-            for ($i = 7; $i >= 0; $i--) {
-                // Get the start and end of the week
-                $startOfWeek = $today->copy()->subWeeks($i)->startOfWeek();
-                $endOfWeek = $today->copy()->subWeeks($i)->endOfWeek();
+            // Loop from 0 to 11 for this month and previous 5 months
+            for ($i = 0; $i < 6; $i++) {
+                // Get the start and end of the month safely
+                $date = Carbon::now()->subMonths($i); // 0 - 5, means current month and previous 6 months
 
+                $startDate = $date->copy()->startOfMonth(); // Start of the month
+                $endDate = $date->copy()->endOfMonth(); // End of the month
 
-                // Calculate the revenue for the current week
-                $weeklyRevenue = Order::whereBetween('created_at', [$startOfWeek, $endOfWeek])
+                // Sum total revenue for this month
+                $monthlyRevenue = Order::whereBetween('created_at', [$startDate, $endDate])
                     ->sum('total_price');
 
-                // Format the start of the week date as "dd-mm-yyyy"
+                // Add to the revenue array with readable month label
                 $revenue[] = [
-                    'revenue' => $weeklyRevenue,
-                    'week' => $startOfWeek->format('d-m-Y'),
+                    'revenue' => $monthlyRevenue,
+                    'month' => $date->format('F Y'), // e.g. "January 2023"
                 ];
+            }
+
+            // Reverse the array so it shows from oldest to newest (current month first, on the right)
+            $revenue = array_reverse($revenue);
+
+            // Get last month revenue
+            $previousMonthRevenue = Order::whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->subMonth()->year)
+                ->sum('total_price');
+
+            // Get this month revenue
+            $currentMonthRevenue = Order::whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('total_price');
+
+
+            // Calculate the percentage change from last month to this month
+            if ($previousMonthRevenue > 0) {
+                // Revenue change percentage formula
+                $revenueChangePercentage = (($currentMonthRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100;
+            } else {
+                $revenueChangePercentage = ($currentMonthRevenue > 0) ? 100 : 0; // If last month was zero and this month is not, it's a 100% increase
+            }
+
+
+            // Format the revenue change percentage
+            if ($revenueChangePercentage > 0) {
+                $formattedRevenueChangePercentage = "↑ " . abs($revenueChangePercentage) . " from last month";
+            } elseif ($revenueChangePercentage < 0) {
+                $formattedRevenueChangePercentage = "↓ " . abs($revenueChangePercentage) . " from last month";
+            } else {
+                $formattedRevenueChangePercentage = "0%";
             }
 
             return response()->json([
                 'revenue' => $revenue,
+                'revenue_change' => $formattedRevenueChangePercentage,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

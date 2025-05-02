@@ -155,7 +155,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::get('/admin/products-inventory-status', [DashboardController::class, 'getProductsInventoryStatus']); // get products inventory status "Good"
     Route::get('/admin/total-users', [DashboardController::class, 'getTotalUsers']); // get total users "Good"
     Route::get('/admin/this-month-revenue', [DashboardController::class, 'getTotalRevenueOfMonth']); // get total revenue of the month "Good"
-    Route::get('/admin/signup-statistics', [DashboardController::class, 'getUserSignupStatistics']); // get user signup statistics "Good"
+    Route::get('/admin/signup-statistics', [DashboardController::class, 'getMonthlyUserSignupStatistics']); // get monthly user signup statistics "Good"
     Route::get('/admin/monthly-revenue', [DashboardController::class, 'getMonthlyRevenueStatistics']); // get monthly revenue statistics "Good"
     Route::get('/admin/most-viewed-products', [DashboardController::class, 'getMostViewedProducts']); // get most viewed products "Good"
     Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
