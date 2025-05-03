@@ -170,6 +170,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Statistics routes for admin
     Route::get('/admin/products-statistics', [StatisticsController::class, 'getAllProductsWithStatistics']); // get all products with their statistics "Good"
+    Route::get('/admin/sales-report', [StatisticsController::class, 'getSalesReport']); // get sales report "Good"
 
 });
 
