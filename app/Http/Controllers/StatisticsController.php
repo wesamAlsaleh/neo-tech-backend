@@ -149,7 +149,7 @@ class StatisticsController extends Controller
 
             // Create paginator instance for the collection
             $paginatedCollection = new LengthAwarePaginator(
-                $collection->forPage($page, $perPage), // Items for the current page
+                $collection->forPage($page, $perPage)->values(), // Items for the current page
                 $collection->count(), // Total number of items
                 $perPage, // Items per page
                 $page, // Current page
