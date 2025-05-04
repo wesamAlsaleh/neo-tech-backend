@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class StatisticsController extends Controller
@@ -59,9 +60,15 @@ class StatisticsController extends Controller
         try {
             // Validate the request parameters
             $request->validate([
+                'page' => 'integer|min:1',
+                'per_page' => 'integer|min:1|max:100',
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
             ]);
+
+            // Get pagination params from the request
+            $page = $request->input('page', 1); // default to page 1
+            $perPage = $request->input('per_page', 10); // default to 10 items per page
 
             // Get the start and end dates from the request
             $startDate = Carbon::parse($request->input('start_date'));
@@ -82,9 +89,11 @@ class StatisticsController extends Controller
              * productsSold = [
              * {
              *      "product_id": number,
-             *    "quantity_sold": number,
-             *     "total_price": number
-             * }, // object
+             *    "product_name": string,
+             *   "product_unit_price": number,
+             *     "quantity_sold": number
+             *   "total_revenue": number
+             * }, // index 0
              * ]; // array of objects
              */
             $productSalesData = [];
@@ -135,9 +144,21 @@ class StatisticsController extends Controller
                 }
             }
 
+            // Convert the array to a Laravel collection so we can use collection methods (e.g., paginate)
+            $collection = collect($productSalesData);
+
+            // Create paginator instance for the collection
+            $paginatedCollection = new LengthAwarePaginator(
+                $collection->forPage($page, $perPage), // Items for the current page
+                $collection->count(), // Total number of items
+                $perPage, // Items per page
+                $page, // Current page
+                ['path' => $request->url(), 'query' => $request->query()] // Preserve query parameters in pagination links
+            );
+
             return response()->json([
                 'message' => 'Sales report fetched successfully',
-                'products_sold' => $productSalesData,
+                'report' => $paginatedCollection,
             ], 200);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
