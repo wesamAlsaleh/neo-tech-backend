@@ -144,6 +144,9 @@ class StatisticsController extends Controller
                 }
             }
 
+            // Get the total number of units sold
+            $totalUnitsSold = array_sum(array_column($productSalesData, 'quantity_sold'));
+
             // Convert the array to a Laravel collection so we can use collection methods (e.g., paginate)
             $collection = collect($productSalesData);
 
@@ -159,6 +162,7 @@ class StatisticsController extends Controller
             return response()->json([
                 'message' => 'Sales report fetched successfully',
                 'report' => $paginatedCollection,
+                'total_units_sold' => $totalUnitsSold,
             ], 200);
         } catch (ValidationException $e) {
             // Get the first error message from the validation errors
