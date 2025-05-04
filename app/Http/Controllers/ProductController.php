@@ -14,9 +14,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductController extends Controller
 {
+
 
     // Get all products (with pagination)
     public function getAllProducts(Request $request): JsonResponse
@@ -65,6 +67,130 @@ class ProductController extends Controller
                 'message' => 'Something went wrong while fetching products. Please try again later.',
                 'developerMessage' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Get all products for client (with custom fetching and pagination)
+    public function getAllProductsClient(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $validatedData = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:50', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
+                'categories' => 'nullable|string', // Comma-separated category slugs
+                'priceMin' => 'nullable|numeric|min:0',
+                'priceMax' => 'nullable|numeric|min:0|gt:priceMin',
+                'onSale' => 'nullable',
+                'sortBy' => 'nullable|in:priceAsc,priceDesc,newest,popular,bestSelling', // Sorting options
+            ]);
+
+            // Get the query parameters
+            $perPage = $validatedData['perPage'] ?? 10; // Default to 10 products per page
+            $page = $validatedData['page'] ?? 1; // Default to page 1
+            $categories = $validatedData['categories'] ?? null; // Categories filter
+            $priceMin = $validatedData['priceMin'] ?? null; // Minimum price filter
+            $priceMax = $validatedData['priceMax'] ?? null; // Maximum price filter
+            $sortBy = $validatedData['sortBy'] ?? null; // Sorting option
+
+            // Sale filter
+            $onSale = false; // Default to false
+            if (isset($validatedData['onSale']) && $validatedData['onSale'] == 'true' || $validatedData['onSale'] == true || $validatedData['onSale'] == 1) {
+                $onSale = true;
+            } else {
+                $onSale = false;
+            };
+
+            // Initialize the base query builder
+            $productsQuery = Product::where('is_active', true); // Get all active products by default
+
+            // 1. Category Filtering if provided (supports multiple categories)
+            if (isset($categories) && !empty($categories)) {
+                // Split the string into an array of slugs
+                $categorySlugs = explode(',', $validatedData['categories']); // e.g. 'electronics,clothing' to ['electronics', 'clothing']
+
+                // Get the category IDs based on the slugs
+                $categoryIds = Category::whereIn('category_slug', $categorySlugs)
+                    ->pluck('id') // Plucks the IDs of the categories1
+                    ->toArray(); // Get the IDs of the categories and store them in an array
+
+                // Check if any category IDs were not found
+                if (empty($categoryIds)) {
+                    return response()->json([
+                        'message' => 'No matching categories found',
+                        'products' => []
+                    ], 200);
+                }
+
+                // Update the query to filter by category IDs
+                $productsQuery->whereIn('category_id', $categoryIds);
+            }
+
+            // 2. Price Range Filtering
+            if (isset($priceMin) && isset($priceMax)) {
+                // Update the query to filter by price range
+                $productsQuery->whereBetween('product_price', [$priceMin, $priceMax]);
+            }
+
+            // 3. Sale Products Filtering
+            if (isset($onSale)) {
+                // Update the query to filter by sale status
+                $productsQuery->where('onSale', $onSale);
+            }
+
+            // 4. Sorting Options
+            switch ($sortBy) {
+                case 'priceAsc':
+                    $productsQuery->orderBy('product_price'); // Sort by price ascending (lowest to highest)
+                    break;
+                case 'priceDesc':
+                    $productsQuery->orderByDesc('product_price'); // Sort by price descending (highest to lowest)
+                    break;
+                case 'newest':
+                    $productsQuery->orderByDesc('created_at'); // Sort by newest (latest created)
+                    break;
+                case 'popular':
+                    $productsQuery->orderByDesc('product_view'); // Sort by most popular (highest views)
+                    break;
+                case 'bestSelling':
+                    $productsQuery->orderByDesc('product_sold'); // Sort by best selling (highest sold)
+                    break;
+                default:
+                    $productsQuery->orderByDesc('created_at'); // Default sorting by newest
+            }
+
+            // Get the products to use for pagination
+            $products = $productsQuery->paginate(
+                $perPage, // Number of products per page
+                ['*'], // Get all columns
+                '', // Custom pagination page name
+                $page // Current page number
+            ); // Get all products that match the filters
+
+            // Pagination with custom page name
+            // $pageName = $validatedData['categories'] ? 'categoryProducts' : 'allProducts';
+
+            // Return the product
+            return response()->json([
+                'message' => " Products retrieved successfully",
+                'products' => $products,
+
+            ], 201);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    'message' => $e->getMessage()
+                ],
+                500
+            );
         }
     }
 

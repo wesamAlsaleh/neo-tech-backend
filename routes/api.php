@@ -191,6 +191,7 @@ Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); //
 
 // Product routes
 Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "Good"
+Route::get('/products-client', [ProductController::class, 'getAllProductsClient']); // get all products client ""
 Route::get('/products/{id}', [ProductController::class, 'getProductById']); // get a single product "Good"
 Route::get('/products-by-name/{product_name}', [ProductController::class, 'searchProductsByName']); // get all products by name "Good"
 Route::get('/products-by-category/{category_name}', [ProductController::class, 'searchProductsByCategory']); // get all products by category "Good"
