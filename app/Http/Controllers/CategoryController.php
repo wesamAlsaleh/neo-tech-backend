@@ -84,12 +84,54 @@ class CategoryController extends Controller
         }
     }
 
-    // Get all categories
-    public function getAllCategories()
+    // Get all categories for admin
+    public function getAllCategoriesAdmin()
     {
         try {
             // Fetch all categories from the database
             $categories = Category::all();
+
+            // Append the full image URL to each category
+            $categories->transform(function ($category) {
+                // Check if category has an image
+                if ($category->category_image) {
+                    // Append the full image URL to the category object
+                    $category->category_image_url = asset('storage/images/categories_images/' . $category->category_image); // image URL e.g. http://localhost:8000/storage/images/categories_images/image.jpg
+                } else {
+                    $category->category_image_url = null; // Optional: Handle categories with no image
+                }
+
+                return $category;
+            });
+
+            // If no categories are found return a JSON response as empty array
+            if ($categories->isEmpty()) {
+                return response()->json([
+                    'message' => 'No categories found',
+                    'categories' => [],
+                ], 200);
+            }
+
+            // Return the response
+            return response()->json([
+                'message' => 'Categories fetched successfully',
+                'categories' => $categories,
+            ], 200);
+        } catch (\Exception $e) {
+            // Handle exceptions
+            return response()->json([
+                'message' => 'An error occurred while fetching categories',
+                'errorMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Get all categories for client
+    public function getAllCategoriesClient()
+    {
+        try {
+            // Fetch all categories from the database
+            $categories = Category::where('is_active', true)->get();
 
             // Append the full image URL to each category
             $categories->transform(function ($category) {

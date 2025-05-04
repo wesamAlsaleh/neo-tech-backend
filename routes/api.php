@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     // Category routes for admin
+    Route::get('/admin/categories', [CategoryController::class, 'getAllCategoriesAdmin']); // get all categories "good"
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
@@ -171,7 +172,6 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     // Statistics routes for admin
     Route::get('/admin/products-statistics', [StatisticsController::class, 'getAllProductsWithStatistics']); // get all products with their statistics "Good"
     Route::get('/admin/sales-report', [StatisticsController::class, 'getSalesReport']); // get sales report "Good"
-
 });
 
 /**
@@ -186,7 +186,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // Route::post('/reset-password', [AuthController::class, 'resetPassword']); // reset the user's password ""
 
 // Category routes
-Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/categories-client', [CategoryController::class, 'getAllCategoriesClient']); // get all categories "good"
 Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
 
 // Product routes
