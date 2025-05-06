@@ -92,14 +92,13 @@ class ProductController extends Controller
             $priceMin = $validatedData['priceMin'] ?? null; // Minimum price filter
             $priceMax = $validatedData['priceMax'] ?? null; // Maximum price filter
             $sortBy = $validatedData['sortBy'] ?? null; // Sorting option
-
-            // Sale filter
-            $onSale = false; // Default to false
-            if (isset($validatedData['onSale']) && $validatedData['onSale'] == 'true' || $validatedData['onSale'] == true || $validatedData['onSale'] == 1) {
-                $onSale = true;
-            } else {
-                $onSale = false;
-            };
+            if (isset($validatedData['onSale'])) {
+                if ($validatedData['onSale'] == 'true' || $validatedData['onSale'] == true) {
+                    $onSale = true;
+                } else {
+                    $onSale = false;
+                };
+            } // Sale filter
 
             // Initialize the base query builder
             $productsQuery = Product::where('is_active', true); // Get all active products by default
