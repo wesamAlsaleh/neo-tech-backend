@@ -215,3 +215,11 @@ Route::get('/display-slider-images', [ImageController::class, 'display']); // ge
 
 // Products Search routes
 Route::get('/search-products', [ProductController::class, 'searchProducts']); // search products by name "Good"
+
+/**
+|----------------------------------------------------------------------------------------
+|   CSV Export routes
+|----------------------------------------------------------------------------------------
+ */
+// Products CSV Export routes
+Route::get('/admin/products/export/statistics/csv', [StatisticsController::class, 'getAllProductsInCSV']); // get all products with their statistics in CSV format "Good"

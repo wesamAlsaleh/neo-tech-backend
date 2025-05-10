@@ -54,6 +54,66 @@ class StatisticsController extends Controller
         }
     }
 
+    // Log to export all products with statistics to a downloadable CSV file
+    public function getAllProductsInCSV()
+    {
+        try {
+            // Get all products from the database, ordered by the number of views (most viewed first)
+            $products = Product::orderBy('product_view', 'desc')
+                ->get();
+
+            // Define the name of the CSV file eg: neoTech_products_data_2023-10-01.csv
+            $filename = 'neoTech_products_data_' . date('Y-m-d') . '.csv';
+
+            // Set the HTTP headers to tell the browser this is a file download of type CSV
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            // Define a callback that generates the CSV content
+            $callback = function () use ($products) {
+                // Open a write-only stream to the output buffer
+                $file = fopen('php://output', 'w'); // this will write to the output buffer
+
+                // Write the column headers to the first row of the CSV
+                fputcsv($file, [
+                    'Product Name',
+                    'Rating',
+                    'Units Sold',
+                    'Views',
+                    'Active Status',
+                    'Created At',
+                    'Updated At'
+                ]); // Column headers
+
+                // Loop through each product and write its data as a row in the CSV
+                foreach ($products as $product) {
+                    fputcsv($file, [
+                        $product->product_name,
+                        $product->product_rating,
+                        $product->product_sold,
+                        $product->product_view,
+                        $product->is_active ? 'Active' : 'Inactive', // Convert boolean to text
+                        $product->created_at->format('Y-m-d H:i:s'),
+                        $product->updated_at->format('Y-m-d H:i:s')
+                    ]); // Product data
+                }
+
+                // Close the output stream
+                fclose($file); // this will flush the output buffer and send the CSV to the browser
+            };
+
+            // Return a streamed response that runs the callback and sends the CSV to the browser
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to export products',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Logic to get the sales report
     public function getSalesReport(Request $request)
     {
@@ -179,4 +239,7 @@ class StatisticsController extends Controller
             ], 500);
         }
     }
+
+    // Logic to get the sales report in Excel format
+
 }
