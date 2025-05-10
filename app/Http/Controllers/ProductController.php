@@ -261,7 +261,7 @@ class ProductController extends Controller
                 'product_stock' => 'nullable|integer|min:0',
                 'product_sold' => 'nullable|integer|min:0',
                 'product_view' => 'nullable|integer|min:0',
-                'product_barcode' => 'required|string|unique:products,product_barcode|max:50',
+                'product_barcode' => 'required|string|unique:products,product_barcode|max:50|min:13|regex:/^[0-9]+$/', // Ensure barcode is numeric and unique
                 'product_images' => 'nullable|array',
                 'product_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
