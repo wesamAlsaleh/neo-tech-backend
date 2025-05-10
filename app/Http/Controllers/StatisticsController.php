@@ -241,5 +241,121 @@ class StatisticsController extends Controller
     }
 
     // Logic to get the sales report in Excel format
+    public function getSalesDataInCSV(Request $request)
+    {
+        try {
+            // Validate the request parameters
+            $request->validate([
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+            ]);
 
+            // Get the start and end dates from the request
+            $startDate = Carbon::parse($request->input('start_date'));
+            $endDate = Carbon::parse($request->input('end_date'));
+
+            // Get the sales data
+            $orders = Order::whereBetween('created_at', [$startDate, $endDate])
+                ->select([
+                    'id',
+                    'total_price',
+                    'created_at',
+                ])
+                ->with('orderItems')
+                ->get();
+
+            // Define the name of the CSV file eg: neoTech_products_data_2023-10-01.csv
+            $filename = 'neoTech_sales_data_' . date('Y-m-d') . '.csv';
+
+            // Set the HTTP headers to tell the browser this is a file download of type CSV
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ];
+
+            // Define a callback that generates the CSV content
+            $callback = function () use ($orders) {
+                // Open a write-only stream to the output buffer
+                $file = fopen('php://output', 'w'); // this will write to the output buffer
+
+                // Write the column headers to the first row of the CSV
+                fputcsv($file, [
+                    'Product Name',
+                    'Unit Price',
+                    'Units Sold',
+                    'Revenue',
+                ]); // Column headers
+
+                // Initialize an array to hold the products sold with their statistics
+                $productSalesData = [];
+
+                // Loop through each order and get the products sold and the total amount for each product
+                foreach ($orders as $order) {
+                    // Get the order items for each order
+                    $orderItems = $order->orderItems;
+
+                    // Loop through the order items to get the product details
+                    foreach ($orderItems as $orderItem) {
+                        // Get the product ID and quantity sold
+                        $productId = $orderItem->product_id;
+                        $quantity = $orderItem->quantity;
+                        $lineTotal = $orderItem->price; // Total price for the line item (unit price * quantity)
+
+                        // Get the product from the database
+                        $product = Product::find($productId);
+
+                        // if the product is not found, skip to the next iteration
+                        if (!$product) continue;
+
+                        // Get the product name
+                        $productName = $product->product_name;
+
+                        // Get the Current unit price based on whether the product is on sale
+                        $unitPrice = $product->onSale ? $product->product_price_after_discount : $product->product_price;
+
+                        // Get all the product id's from the productSalesData array
+                        $productIds = array_column($productSalesData, 'product_id');
+
+                        // Search for existing product entry (returns the index of the product in the array or false if not found)
+                        $index = array_search($productId, $productIds); // Check if the product already exists in the array
+
+                        // If the product already exists in the array, update the quantity and total price
+                        if ($index !== false) {
+                            $productSalesData[$index]['quantity_sold'] += $quantity;
+                            $productSalesData[$index]['total_revenue'] += $lineTotal;
+                        } else {
+                            $productSalesData[] = [
+                                'product_id' => $productId,
+                                'product_name' => $productName,
+                                'product_unit_price' => $unitPrice, // Current unit price of the product
+                                'quantity_sold' => $quantity,
+                                'total_revenue' => $lineTotal, // Total revenue for the product (unit price at checkout * quantity sold)
+                            ];
+                        }
+                    }
+                }
+
+                // Loop through the product sales data and write it to the CSV
+                foreach ($productSalesData as $product) {
+                    fputcsv($file, [
+                        $product['product_name'],
+                        $product['product_unit_price'],
+                        $product['quantity_sold'],
+                        $product['total_revenue'],
+                    ]);  // csv row data
+                }
+
+                // Close the output stream
+                fclose($file); // this will flush the output buffer and send the CSV to the browser
+            };
+
+            // Return a streamed response that runs the callback and sends the CSV to the browser
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to export products',
+                'devMessage' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

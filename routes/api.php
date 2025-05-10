@@ -223,3 +223,4 @@ Route::get('/search-products', [ProductController::class, 'searchProducts']); //
  */
 // Products CSV Export routes
 Route::get('/admin/products/export/statistics/csv', [StatisticsController::class, 'getAllProductsInCSV']); // get all products with their statistics in CSV format "Good"
+Route::get('/admin/sales/export/statistics/csv', [StatisticsController::class, 'getSalesDataInCSV']); // get sales data in CSV format "Good"
