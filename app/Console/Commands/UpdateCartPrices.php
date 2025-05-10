@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\CartItem;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Console\Command;
 
 class UpdateCartPrices extends Command
@@ -56,7 +57,25 @@ class UpdateCartPrices extends Command
             } else {
                 $this->error("Failed to update cart item ID: {$cartItem->id}");
                 $this->error('Error saving the cart item.');
+
+                // Add performance log
+                SystemPerformanceLog::create([
+                    'log_type' => 'error',
+                    'message' => "Failed to update cart item ID: {$cartItem->id}",
+                    'context' => 'Checking cart prices for active sale discounts ended with error.',
+                    'user_id' => null,
+                    'status_code' => 500,
+                ]);
             }
         }
+
+        // Add performance log
+        SystemPerformanceLog::create([
+            'log_type' => 'info',
+            'message' => "Cart prices updated successfully.",
+            'context' => 'Checking cart prices for active sale discounts ended successfully.',
+            'user_id' => null,
+            'status_code' => 201,
+        ]);
     }
 }

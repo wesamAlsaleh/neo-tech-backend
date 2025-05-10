@@ -3,13 +3,16 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopFeatureController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\UserAddressController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Models\OrderItem;
@@ -87,6 +90,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
  */
 Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function () {
     // Category routes for admin
+    Route::get('/admin/categories', [CategoryController::class, 'getAllCategoriesAdmin']); // get all categories "good"
     Route::post('/admin/create-category', [CategoryController::class, 'createCategory']); // store category in database "good"
     Route::post('/admin/update-category/{id}', [CategoryController::class, 'updateCategoryById']); // update category by id "good"
     Route::delete('/admin/delete-category/{id}', [CategoryController::class, 'deleteCategoryById']); // delete category by id "good"
@@ -134,10 +138,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
 
     // Order routes for admin
     Route::get('/admin/orders', [OrderController::class, 'index']); // get all orders "Good"
-    // TODO: Merge the following 3 routes into one route
-    Route::put('/admin/pending-order/{id}', [OrderController::class, 'setOrderStatusToPending']); // update order status by id to pending "Good"
-    Route::put('/admin/completed-order/{id}', [OrderController::class, 'setOrderStatusToCompleted']); // update order status by id to completed "Good"
-    Route::put('/admin/canceled-order/{id}', [OrderController::class, 'setOrderStatusToCanceled']); // update order status by id to canceled "Good"
+    Route::post('/admin/change-order-status/{id}', [OrderController::class, 'setOrderStatus']); // update order status by id to specified status "Good"
 
     Route::get('/admin/order/{id}', [OrderController::class, 'show']); // get a single order by id "Good"
     Route::get('/admin/user-orders/{userId}', [OrderController::class, 'getOrdersByUserId']); // get all orders by user id "Good"
@@ -149,6 +150,28 @@ Route::middleware(['auth:sanctum', EnsureUserIsAdmin::class])->group(function ()
     Route::post('/admin/order-items/add-item', [OrderItemController::class, 'addOrderItem']); // add order item to an order "Good"
     Route::post('/admin/order-items/update-item-quantity', [OrderItemController::class, 'updateOrderItemQuantity']); // update order item quantity ""
 
+    // Dashboard routes for admin
+    Route::get('/admin/pending-orders-count', [DashboardController::class, 'getTotalPendingOrders']); // get total pending orders "Good"
+    Route::get('/admin/todays-orders', [DashboardController::class, 'getTotalOrdersToday']); // get total orders for today "Good"
+    Route::get('/admin/products-inventory-status', [DashboardController::class, 'getProductsInventoryStatus']); // get products inventory status "Good"
+    Route::get('/admin/total-users', [DashboardController::class, 'getTotalUsers']); // get total users "Good"
+    Route::get('/admin/this-month-revenue', [DashboardController::class, 'getTotalRevenueOfMonth']); // get total revenue of the month "Good"
+    Route::get('/admin/signup-statistics', [DashboardController::class, 'getMonthlyUserSignupStatistics']); // get monthly user signup statistics "Good"
+    Route::get('/admin/monthly-revenue', [DashboardController::class, 'getMonthlyRevenueStatistics']); // get monthly revenue statistics "Good"
+    Route::get('/admin/most-viewed-products', [DashboardController::class, 'getMostViewedProducts']); // get most viewed products "Good"
+    Route::get('/admin/last-orders', [DashboardController::class, 'getLatestOrders']); // get last 10 orders "Good"
+    Route::get('/admin/system-performance-logs', [DashboardController::class, 'getSystemPerformanceLogs']); // get system performance logs "Good"
+    Route::post('/admin/global-search', [DashboardController::class, 'globalSearch']); // global search "Good"
+
+    // User routes for admin
+    Route::get('/admin/users', [UserController::class, 'index']); // get all users "Good"
+    Route::get('/admin/user/{id}', [UserController::class, 'show']); // get a single user by id "Good"
+    Route::post('/admin/update-user/{id}', [UserController::class, 'update']); // update a user by id "Good"
+    Route::get('/admin/admin-users', [UserController::class, 'getAdmins']); // get all admin users "Good"
+
+    // Statistics routes for admin
+    Route::get('/admin/products-statistics', [StatisticsController::class, 'getAllProductsWithStatistics']); // get all products with their statistics "Good"
+    Route::get('/admin/sales-report', [StatisticsController::class, 'getSalesReport']); // get sales report "Good"
 });
 
 /**
@@ -163,11 +186,12 @@ Route::post('/login', [AuthController::class, 'login']);
 // Route::post('/reset-password', [AuthController::class, 'resetPassword']); // reset the user's password ""
 
 // Category routes
-Route::get('/categories', [CategoryController::class, 'getAllCategories']); // get all categories "good"
+Route::get('/categories-client', [CategoryController::class, 'getAllCategoriesClient']); // get all categories "good"
 Route::get('/category/{id}', [CategoryController::class, 'getCategoryById']); // get a single category "good"
 
 // Product routes
 Route::get('/products', [ProductController::class, 'getAllProducts']); // get all products "Good"
+Route::get('/products-client', [ProductController::class, 'getAllProductsClient']); // get all products client ""
 Route::get('/products/{id}', [ProductController::class, 'getProductById']); // get a single product "Good"
 Route::get('/products-by-name/{product_name}', [ProductController::class, 'searchProductsByName']); // get all products by name "Good"
 Route::get('/products-by-category/{category_name}', [ProductController::class, 'searchProductsByCategory']); // get all products by category "Good"
@@ -188,3 +212,15 @@ Route::get('/display-active-flash-sale', [FlashSaleController::class, 'display']
 
 // Image Slider routes
 Route::get('/display-slider-images', [ImageController::class, 'display']); // get the active images "Good"
+
+// Products Search routes
+Route::get('/search-products', [ProductController::class, 'searchProducts']); // search products by name "Good"
+
+/**
+|----------------------------------------------------------------------------------------
+|   CSV Export routes
+|----------------------------------------------------------------------------------------
+ */
+// Products CSV Export routes
+Route::get('/admin/products/export/statistics/csv', [StatisticsController::class, 'getAllProductsInCSV']); // get all products with their statistics in CSV format "Good"
+Route::get('/admin/sales/export/statistics/csv', [StatisticsController::class, 'getSalesDataInCSV']); // get sales data in CSV format "Good"

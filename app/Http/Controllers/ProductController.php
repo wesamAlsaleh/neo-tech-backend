@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Category;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -13,9 +14,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductController extends Controller
 {
+
 
     // Get all products (with pagination)
     public function getAllProducts(Request $request): JsonResponse
@@ -64,6 +67,129 @@ class ProductController extends Controller
                 'message' => 'Something went wrong while fetching products. Please try again later.',
                 'developerMessage' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Get all products for client (with custom fetching and pagination)
+    public function getAllProductsClient(Request $request): JsonResponse
+    {
+        try {
+            // Validate the request
+            $validatedData = $request->validate([
+                'perPage' => 'nullable|integer|min:1|max:50', // Number of products per page
+                'page' => 'nullable|integer|min:1', // Number of the current page
+                'categories' => 'nullable|string', // Comma-separated category slugs
+                'priceMin' => 'nullable|numeric|min:0',
+                'priceMax' => 'nullable|numeric|min:0|gt:priceMin',
+                'onSale' => 'nullable',
+                'sortBy' => 'nullable|in:priceAsc,priceDesc,newest,popular,bestSelling', // Sorting options
+            ]);
+
+            // Get the query parameters
+            $perPage = $validatedData['perPage'] ?? 10; // Default to 10 products per page
+            $page = $validatedData['page'] ?? 1; // Default to page 1
+            $categories = $validatedData['categories'] ?? null; // Categories filter
+            $priceMin = $validatedData['priceMin'] ?? null; // Minimum price filter
+            $priceMax = $validatedData['priceMax'] ?? null; // Maximum price filter
+            $sortBy = $validatedData['sortBy'] ?? null; // Sorting option
+            if (isset($validatedData['onSale'])) {
+                if ($validatedData['onSale'] == 'true' || $validatedData['onSale'] == true) {
+                    $onSale = true;
+                } else {
+                    $onSale = false;
+                };
+            } // Sale filter
+
+            // Initialize the base query builder
+            $productsQuery = Product::where('is_active', true); // Get all active products by default
+
+            // 1. Category Filtering if provided (supports multiple categories)
+            if (isset($categories) && !empty($categories)) {
+                // Split the string into an array of slugs
+                $categorySlugs = explode(',', $validatedData['categories']); // e.g. 'electronics,clothing' to ['electronics', 'clothing']
+
+                // Get the category IDs based on the slugs
+                $categoryIds = Category::whereIn('category_slug', $categorySlugs)
+                    ->pluck('id') // Plucks the IDs of the categories1
+                    ->toArray(); // Get the IDs of the categories and store them in an array
+
+                // Check if any category IDs were not found
+                if (empty($categoryIds)) {
+                    return response()->json([
+                        'message' => 'No matching categories found',
+                        'products' => []
+                    ], 200);
+                }
+
+                // Update the query to filter by category IDs
+                $productsQuery->whereIn('category_id', $categoryIds);
+            }
+
+            // 2. Price Range Filtering
+            if (isset($priceMin) && isset($priceMax)) {
+                // Update the query to filter by price range
+                $productsQuery->whereBetween('product_price', [$priceMin, $priceMax]);
+            }
+
+            // 3. Sale Products Filtering
+            if (isset($onSale)) {
+                // Update the query to filter by sale status
+                $productsQuery->where('onSale', $onSale);
+            }
+
+            // 4. Sorting Options
+            switch ($sortBy) {
+                case 'priceAsc':
+                    $productsQuery->orderBy('product_price'); // Sort by price ascending (lowest to highest)
+                    break;
+                case 'priceDesc':
+                    $productsQuery->orderByDesc('product_price'); // Sort by price descending (highest to lowest)
+                    break;
+                case 'newest':
+                    $productsQuery->orderByDesc('created_at'); // Sort by newest (latest created)
+                    break;
+                case 'popular':
+                    $productsQuery->orderByDesc('product_view'); // Sort by most popular (highest views)
+                    break;
+                case 'bestSelling':
+                    $productsQuery->orderByDesc('product_sold'); // Sort by best selling (highest sold)
+                    break;
+                default:
+                    $productsQuery->orderByDesc('created_at'); // Default sorting by newest
+            }
+
+            // Get the products to use for pagination
+            $products = $productsQuery->paginate(
+                $perPage, // Number of products per page
+                ['*'], // Get all columns
+                '', // Custom pagination page name
+                $page // Current page number
+            ); // Get all products that match the filters
+
+            // Pagination with custom page name
+            // $pageName = $validatedData['categories'] ? 'categoryProducts' : 'allProducts';
+
+            // Return the product
+            return response()->json([
+                'message' => " Products retrieved successfully",
+                'products' => $products,
+
+            ], 201);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    'message' => $e->getMessage()
+                ],
+                500
+            );
         }
     }
 
@@ -135,7 +261,7 @@ class ProductController extends Controller
                 'product_stock' => 'nullable|integer|min:0',
                 'product_sold' => 'nullable|integer|min:0',
                 'product_view' => 'nullable|integer|min:0',
-                'product_barcode' => 'required|string|unique:products,product_barcode|max:50',
+                'product_barcode' => 'required|string|unique:products,product_barcode|max:50|min:13|regex:/^[0-9]+$/', // Ensure barcode is numeric and unique
                 'product_images' => 'nullable|array',
                 'product_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB per image
                 'category_id' => 'required|exists:categories,id',
@@ -194,7 +320,14 @@ class ProductController extends Controller
                 'is_active' => $validatedData['is_active'] ?? false, // 'is_active' => by default false,
             ]);
 
-
+            // Add performance log
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "Product {$product->product_name} created successfully",
+                'context' => json_encode($product),
+                'user_id' => $request->user()->id,
+                'status_code' => 201,
+            ]);
 
             // Return the product
             return response()->json([
@@ -202,9 +335,12 @@ class ProductController extends Controller
                 'productData' => $product->load('category')
             ], 201);
         } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
             return response()->json([
-                'message' => explode(':', $e->getMessage())[1], // Get the error message without "The name field is required."
-                'errors' => $e->errors()
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json(
@@ -357,6 +493,15 @@ class ProductController extends Controller
             // Soft delete the product (sets 'deleted_at' to the current timestamp)
             $product->delete();
 
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} soft deleted successfully",
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
+            ]);
+
             // Return a success message
             return response()->json([
                 'message' => "{$product->product_name} deleted successfully"
@@ -380,6 +525,15 @@ class ProductController extends Controller
 
             // Restore the product
             $product->restore();
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} restored successfully",
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
+            ]);
 
             // Return a success message
             return response()->json([
@@ -447,6 +601,15 @@ class ProductController extends Controller
                 'sale_end' => $validated['sale_end'],
             ]);
 
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is now on sale",
+                'context' => json_encode($product),
+                'user_id' => $request->user()->id,
+                'status_code' => 200,
+            ]);
+
             // Return the updated product
             return response()->json([
                 'message' => "{$product->product_name} is now on sale, the discount is {$product->discount}% and the sale starts on {$product->sale_start} and the sale ends on {$product->sale_end}, the sale duration is {$product->sale_duration} days.",
@@ -471,7 +634,7 @@ class ProductController extends Controller
     }
 
     // Remove a product from sale
-    public function removeProductFromSale(String $id): JsonResponse
+    public function removeProductFromSale(String $id, Request $request): JsonResponse
     {
         try {
             // Find the product
@@ -492,6 +655,15 @@ class ProductController extends Controller
                 'sale_start' => null,
                 'sale_end' => null,
                 'product_price_after_discount' => 0,
+            ]);
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is no longer on sale",
+                'context' => json_encode($product),
+                'user_id' => $request->user()->id,
+                'status_code' => 200,
             ]);
 
             // Return the updated product
@@ -675,46 +847,6 @@ class ProductController extends Controller
         }
     }
 
-    // Search for products by rating
-    public function searchProductsByRating($rating): JsonResponse
-    {
-        try {
-            // Check if the rating is within the range 0-5
-            if ($rating < 0 || $rating > 5) {
-                return response()->json(['message' => 'Rating must be between 0 and 5'], 400);
-            }
-
-            // Search for products where the rating is equal to the search term
-            $products = Product::where('product_rating', $rating)->get(); // get all products that match the search term
-
-            // Check if products were found
-            if ($products->isEmpty()) {
-                return response()->json(['message' => 'No products found'], 404);
-            }
-
-            // Transform the products to include full image URLs
-            $productsWithImages = $products->map(function ($product) {
-                // Check if the product has images, if so, prepend the URL to each image path in the array, else return an empty array
-                $product->images = $product->images ?
-                    array_map(function ($image) {
-                        return asset('storage/' . $image); // Ensure it has the correct URL
-                    }, $product->images) : [];
-
-                // Return the product
-                return $product;
-            });
-
-            // Return the products
-            return response()->json($productsWithImages, 200);
-        } catch (ModelNotFoundException) {
-            return response()->json(['message' => 'No products found'], 404);
-        } catch (QueryException $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 500);
-        }
-    }
-
     // Search for products by price range
     public function searchProductsByPriceRange($minPrice, $maxPrice): JsonResponse
     {
@@ -844,6 +976,15 @@ class ProductController extends Controller
             // Toggle the status of the product
             $product->update([
                 'is_active' => !$product->is_active
+            ]);
+
+            // Log the action
+            SystemPerformanceLog::create([
+                'log_type' => 'info',
+                'message' => "{$product->product_name} is now " . ($product->is_active ? 'active' : 'inactive'),
+                'context' => json_encode($product),
+                'user_id' => request()->user()->id,
+                'status_code' => 200,
             ]);
 
             // Return the updated product
@@ -1014,6 +1155,45 @@ class ProductController extends Controller
             return response()->json([
                 'message' => "Failed to increment {$product->product_name} rating",
                 'devMessage' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Logic to globally search for products
+    public function searchProducts(Request $request)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'query' => 'required|string|max:255', // Ensure the query is a string and not empty
+            ]);
+
+            // Get the search term from the url
+            $searchTerm = $request->input('query');
+
+            // Perform the search across the product model
+            $products = Product::where('product_name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('slug', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('product_barcode', 'LIKE', "%{$searchTerm}%")
+                ->get();
+
+            return response()->json([
+                'message' => "Search results for: {$searchTerm}",
+                'products_count' => count($products),
+                'products' => $products,
+            ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while performing the global search.',
+                'devMessage' => $e->getMessage(),
             ], 500);
         }
     }

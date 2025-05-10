@@ -85,28 +85,33 @@ class OrderController extends Controller
         }
     }
 
-    // Logic to set order status to pending by order ID [for admin dashboard]
-    public function setOrderStatusToPending(int $id)
+    // Logic to set order status by order ID to specified status [for admin dashboard]
+    public function setOrderStatus(int $id, Request $request)
     {
         try {
+            // Validate the request
+            $request->validate([
+                'status' => 'required|string|in:pending,completed,canceled',
+            ]);
+
             // Find the order by ID
             $order = Order::findOrFail($id);
 
-            // Check if the order is already pending
-            if ($order->status === 'pending') {
-                return response()->json([
-                    'message' => "Order with ID {$id} is already pending",
-                    'devMessage' => 'ORDER_ALREADY_PENDING'
-                ]);
-            }
-
-            // Update the order status to pending
-            $order->status = 'pending';
+            // Update the order status to the specified status
+            $order->status = $request->input('status');
             $order->save();
 
             return response()->json([
-                'message' => "Order with ID {$id} status updated to pending",
+                'message' => "Order with ID {$id} status updated to ({$order->status}) successfully.",
             ]);
+        } catch (ValidationException $e) {
+            // Get the first error message from the validation errors
+            $errorMessages = collect($e->errors())->flatten()->first();
+
+            return response()->json([
+                'message' => $errorMessages,
+                'devMessage' => $e->errors(),
+            ], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found',
@@ -120,75 +125,6 @@ class OrderController extends Controller
         }
     }
 
-    // Logic to set order status to completed by order ID [for admin dashboard]
-    public function setOrderStatusToCompleted(int $id)
-    {
-        try {
-            // Find the order by ID
-            $order = Order::findOrFail($id);
-
-            // Check if the order is already completed
-            if ($order->status === 'completed') {
-                return response()->json([
-                    'message' => "Order with ID {$id} is already completed",
-                    'devMessage' => 'ORDER_ALREADY_COMPLETED'
-                ]);
-            }
-
-            // Update the order status to completed
-            $order->status = 'completed';
-            $order->save();
-
-            return response()->json([
-                'message' => "Order with ID {$id} status updated to completed",
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Order not found',
-                'devMessage' => $e->getMessage()
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error occurred while updating order status',
-                'devMessage' => $e->getMessage()
-            ]);
-        }
-    }
-
-    // Logic to set order status to canceled by order ID [for admin dashboard]
-    public function setOrderStatusToCanceled(int $id)
-    {
-        try {
-            // Find the order by ID
-            $order = Order::findOrFail($id);
-
-            // Check if the order is already canceled
-            if ($order->status === 'canceled') {
-                return response()->json([
-                    'message' => "Order with ID {$id} is already canceled",
-                    'devMessage' => 'ORDER_ALREADY_CANCELED'
-                ]);
-            }
-
-            // Update the order status to canceled
-            $order->status = 'canceled';
-            $order->save();
-
-            return response()->json([
-                'message' => "Order with ID {$id} status updated to canceled",
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Order not found',
-                'devMessage' => $e->getMessage()
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error occurred while updating order status',
-                'devMessage' => $e->getMessage()
-            ]);
-        }
-    }
 
     // Logic to get orders based on their status with pagination [for admin dashboard (filtering)]
     public function getOrdersByStatus(String $status)

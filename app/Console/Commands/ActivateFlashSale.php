@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\FlashSale;
+use App\Models\SystemPerformanceLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -43,6 +44,19 @@ class ActivateFlashSale extends Command
                 // Log that the flash sale has been activated
                 Log::info("Flash sale with ID {$flashSale->name} has been activated.");
 
+                // Add performance log
+                SystemPerformanceLog::create([
+                    'log_type' => 'info',
+                    'message' => "{$flashSale->name} has been activated.",
+                    'context' => json_encode([
+                        'flash_sale_id' => $flashSale->id,
+                        'start_date' => $flashSale->start_date,
+                        'end_date' => $flashSale->end_date,
+                    ]),
+                    'user_id' => null, // Assuming this is a system-level action, no user is associated
+                    'status_code' => 200, // Assuming success
+                ]);
+
                 // No need to check other flash sales
                 break;
             } else {
@@ -51,6 +65,19 @@ class ActivateFlashSale extends Command
 
                 // Log that the flash sale has been deactivated
                 Log::info("Flash sale with ID {$flashSale->id} has been deactivated.");
+
+                // Add performance log
+                SystemPerformanceLog::create([
+                    'log_type' => 'info',
+                    'message' => "Flash sale with ID {$flashSale->id} has been deactivated.",
+                    'context' => json_encode([
+                        'flash_sale_id' => $flashSale->id,
+                        'start_date' => $flashSale->start_date,
+                        'end_date' => $flashSale->end_date,
+                    ]),
+                    'user_id' => null, // Assuming this is a system-level action, no user is associated
+                    'status_code' => 200, // Assuming success
+                ]);
             }
         }
     }
